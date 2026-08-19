@@ -1,237 +1,153 @@
-# Hurricane Project Architecture
+# Hurricane Emergency Simulation: Current Architecture
 
-_Snapshot date: 2026-07-11_
+_Current checkout snapshot: 2026-08-19_
 
-This document describes the structure that exists in the current Unity project checkout. It is an inventory and architecture map, not a refactor plan.
+## Document Role
 
-## Project Overview
+This file is the source of truth for the architecture that exists in the Unity project now.
 
-The project is a Unity 6000.3.3f1 2D/WebGL-oriented simulation about hurricane preparedness. The runtime architecture is centered around a single active Unity scene and a mode-based simulation flow. External web code can drive the simulation through public MonoBehaviour methods and a WebGL JavaScript bridge.
+- It describes current code, scene wiring, runtime flow, and known constraints.
+- It does not prescribe the future rule-builder implementation.
+- The future implementation order and proposed classes are documented in `MB_IMPLEMENTATION_PLAN.md`.
+- When code or scene wiring changes, update this file in the same change.
 
-The core gameplay/simulation loop is:
-
-1. Web page or Unity editor input selects a simulation state or scene index.
-2. `ObjectsHolder` or `SimulationManager` switches the active `ModeName`.
-3. `SimulationManager` activates one `ISimulationMode` implementation.
-4. The active mode triggers scene objects, animator states, timers, queues, and WebGL callbacks.
-5. Animation-event helper scripts report completed actions back to WebGL through `EventsManager` or `WebGLBridge`.
-
-## Unity Project Structure
-
-### Root
-
-| Path | Purpose |
-| --- | --- |
-| `Assets/` | Authored Unity content: scripts, scenes, sprites, animations, audio, prefabs, URP settings, TextMesh Pro resources. |
-| `Packages/` | Unity package manifest and package lock. |
-| `ProjectSettings/` | Unity editor, render pipeline, input, quality, physics, audio, and build settings. |
-| `Library/`, `Temp/`, `Logs/`, `obj/`, `.vs/` | Generated/editor cache folders. These are not authored gameplay architecture. |
-| `Assembly-CSharp.csproj`, `Hurricane.sln`, `Hurricane.slnx` | Generated IDE/project files for C# editing. |
-
-### Unity Version And Packages
+## Project Baseline
 
 | Item | Current value |
 | --- | --- |
 | Unity version | `6000.3.3f1` |
+| Runtime style | One primary Unity scene with mode-based content activation |
+| Enabled build scene | `Assets/Scenes/SampleScene.unity` |
 | Render pipeline | Universal Render Pipeline `17.3.0` |
-| Main feature set | Unity 2D feature package, UGUI, Timeline, Visual Scripting, TextMesh Pro resources |
-| Web target support | Project contains `Assets/Plugins/Web.jslib` and `WebGLBridge` P/Invoke bindings |
+| UI | UGUI `2.0.0` and TextMesh Pro assets |
+| Browser integration | `Assets/Plugins/Web.jslib` through `WebGLBridge` |
+| Main coordinator | `SimulationManager` |
+| Mode lifecycle | `ISimulationMode` |
 
-### Scenes
+Other scene assets exist, but they are not enabled in Build Settings:
 
-| Scene | Role |
-| --- | --- |
-| `Assets/Scenes/SampleScene.unity` | Main enabled build scene. This is the primary runtime scene in `EditorBuildSettings.asset`. |
-| `Assets/Scenes/New Scene.unity` | Additional scene asset, not enabled in build settings. |
-| `Assets/Settings/Scenes/URP2DSceneTemplate.unity` | URP 2D scene template. |
-| `Assets/_Recovery/0.unity`, `Assets/_Recovery/0 (1).unity` | Unity recovery scenes. These should be treated as editor recovery artifacts unless explicitly promoted. |
+- `Assets/Scenes/New Scene.unity`
+- `Assets/Settings/Scenes/URP2DSceneTemplate.unity`
+- recovery scenes under `Assets/_Recovery/`
 
-## Asset Folder Map
+Recovery scenes and the URP template are not runtime levels.
 
-| Folder | Current role |
-| --- | --- |
-| `Assets/Animations/` | Shared animation clips/controllers for house, parents, calendar, radio, children room, garden, supermarket, TV, and hurricane sequences. |
-| `Assets/BG/` | Background art for neighborhood, house, road, supermarket arrival, and other scene backgrounds. |
-| `Assets/Materials/` | A small set of materials used by sprites/effects. |
-| `Assets/Mission 8/` | New/unfinished mission-specific image assets such as background, branches, bottles, glass, lightpost, and trees. |
-| `Assets/Panic/` | Panic alert image sequence and animation/controller. |
-| `Assets/Plugins/` | WebGL JavaScript library integration (`Web.jslib`). |
-| `Assets/prefabs/` | Leaf animation/effect prefabs. |
-| `Assets/Resources/` | Empty authored resources folder. |
-| `Assets/Scenes/` | Main Unity scene assets. |
-| `Assets/Scripts/` | Runtime C# scripts. This is the core architecture folder. |
-| `Assets/Settings/` | URP 2D renderer, global URP asset, and scene template settings. |
-| `Assets/Shelter/` | Shelter-specific sprites, animation clips, and controllers. |
-| `Assets/sounds/` | Audio clips for music, radio broadcast, and samples. |
-| `Assets/Sprites/` | Largest content folder. Contains mission art, character rigs, item sprites, sprite atlases, and many animation frame sequences. |
-| `Assets/TextMesh Pro/` | TMP package resources, shaders, fonts, sprite assets, and settings. |
-| `Assets/_Recovery/` | Unity auto-recovery scene files. |
+## Runtime Model
 
-Approximate authored asset counts at scan time:
+The project does not currently load a separate Unity scene for each lesson. `SampleScene.unity` contains the simulation content and switches between lesson roots by `ModeName`.
 
-| Type | Count |
-| --- | ---: |
-| `.png` | 562 |
-| `.anim` | 85 |
-| `.controller` | 36 |
-| `.cs` | 29 |
-| `.asset` | 9 |
-| `.spriteatlasv2` | 6 |
-| `.unity` | 5 |
-| `.mat` | 4 |
-| `.prefab` | 2 |
-| Audio files (`.wav`, `.mp3`) | 3 |
+```text
+WebGL command or Editor mode field
+               |
+               v
+ObjectsHolder / SimulationManager
+               |
+               v
+SimulationManager.SwitchMode(ModeName)
+       |                       |
+       v                       v
+ISimulationMode lifecycle   GameModeUIController
+       |                       |
+       v                       v
+Mode-specific animation    Enable selected content root
+queues, timers and objects
+               |
+               v
+Animation events / completed coroutines
+               |
+               v
+EventsManager or WebGLBridge
+               |
+               v
+Browser host callbacks
+```
 
-## Runtime Architecture
+At present, the browser host provides much of the orchestration and rule logic. Unity owns the visuals and mode-specific execution but does not yet have a native rule builder, runtime rule evaluator, level result flow, or progression save.
 
-### Central Managers
+## Core Components
 
-#### `SimulationManager`
+### `SimulationManager`
 
 Path: `Assets/Scripts/SimulationManager.cs`
 
-`SimulationManager` is the main runtime coordinator. It inherits from `Singelton<SimulationManager>` and owns the active simulation mode.
+`SimulationManager` is a singleton and the central runtime coordinator.
 
-Responsibilities:
+Current responsibilities:
 
-- Creates a `GameModeFactory`.
-- Initializes all known modes from the `ModeName` enum.
-- Tracks `CurrentMode` and `PreviousMode`.
-- Switches modes through `SwitchMode(ModeName)`.
-- Calls `Cleanup()` on the previous mode and `OnSimulationStart()` on the new mode.
-- Raises `OnModeChanged` for UI systems.
-- Calls WebGL initialization once through `WebGLBridge.CallINITfunction()` and calls `WebGLBridge.OnResetDone()` on scene reset.
-- Exposes WebGL-facing methods:
-  - `ResetSimulatiom()`
-  - `SetSimulationStateInUnity(string state)`
+- create `GameModeFactory`;
+- initialize every value in `ModeName`;
+- store `CurrentMode` and `PreviousMode`;
+- call `Cleanup()` on the previous mode;
+- resolve and start the next mode with `OnSimulationStart()`;
+- publish `OnModeChanged` for UI activation;
+- initialize/reset the browser host through `WebGLBridge`;
+- pause or resume `Time.timeScale` and audio from a WebGL string command;
+- reload build scene index `0` for a full simulation reset.
 
-Important behavior:
+Important current behavior:
 
-- In the Unity editor, `Update()` watches the public `newMode` field and switches modes when it changes.
-- Runtime mode lookup is component-based: modes are attached to the same GameObject as `SimulationManager`.
+- In the Unity Editor, `Update()` compares `CurrentMode` with the public `newMode` field and switches automatically.
+- `SampleScene.unity` currently serializes `newMode` as enum value `10`, which is `BathRoomLesson`.
+- `SwitchMode` calls `Cleanup()`, but it does not call `OnSimulationEnd()`.
+- The manager and all mode components are serialized on the same scene GameObject.
+- If a mode component is missing, `GameModeFactory` can add it dynamically. This is unsafe for modes that require Inspector references.
 
-#### `GameModeFactory`
-
-Path: `Assets/Scripts/Modes/GameModeFactory.cs`
-
-Maps `ModeName` values to concrete `ISimulationMode` components.
-
-Current map:
-
-| `ModeName` | Component |
-| --- | --- |
-| `EntryScreen` | `EntryScreenMod` |
-| `House` | `HouseMod` |
-| `ClearingGarden` | `ClearingGardenMod` |
-| `SuperMarket` | `SuperMarketMode` |
-| `ChildrenRoom` | `ChildrenRoomMode` |
-| `GardenView` | `GardenViewMode` |
-| `Shelter` | `ShelterMod` |
-
-If a mode component is missing, the factory adds it dynamically to the target GameObject and calls `Initialize()`.
-
-#### `ISimulationMode`
+### `ISimulationMode`
 
 Path: `Assets/Scripts/ISimulationMode.cs`
 
-Common lifecycle contract for all simulation modes:
+Every mode implements:
 
-- `Initialize()`
-- `OnSimulationStart()`
-- `OnSimulationEnd()`
-- `Cleanup()`
+```csharp
+void Initialize();
+void OnSimulationStart();
+void OnSimulationEnd();
+void Cleanup();
+```
 
-The project currently uses this interface as the main boundary between the simulation coordinator and scene-specific behavior.
+The lifecycle is only partially implemented across modes. Several `Cleanup()` methods only log or are empty, and `GardenViewMode.Cleanup()` currently throws `NotImplementedException`.
 
-#### `ModeName`
+### `GameModeFactory`
 
-Path: `Assets/Scripts/ModeName.cs`
+Path: `Assets/Scripts/Modes/GameModeFactory.cs`
 
-Defines the simulation state enum:
+The factory maps every `ModeName` to one component type. It first looks for that component on the `SimulationManager` GameObject and adds it if missing.
 
-- `EntryScreen`
-- `House`
-- `ClearingGarden`
-- `SuperMarket`
-- `ChildrenRoom`
-- `GardenView`
-- `Shelter`
+All current mode components are already serialized in `SampleScene.unity`, so normal startup uses the Inspector-configured instances.
 
-### WebGL And Event Bridge
+### `GameModeUIController`
 
-#### `WebGLBridge`
+Path: `Assets/Scripts/GameModeUIController.cs`
 
-Path: `Assets/Scripts/WebGLBridge.cs`
+This component subscribes to `SimulationManager.OnModeChanged` and controls one configured scene root per gameplay mode.
 
-Static bridge between Unity C# and JavaScript in WebGL builds.
+Current scene configuration:
 
-In WebGL builds it imports JavaScript functions from `__Internal`:
+| Enum value | `ModeName` | Controlled root |
+| ---: | --- | --- |
+| `0` | `EntryScreen` | No object assigned |
+| `1` | `House` | `HouseMod` |
+| `2` | `ClearingGarden` | `Clearing Garden mod` |
+| `3` | `SuperMarket` | `Super Market` |
+| `4` | `ChildrenRoom` | `Children room` |
+| `5` | `GardenView` | `GardenViewMode` |
+| `6` | `Shelter` | `Shelter` |
+| `7` | `AfterTheHurricane` | `Mission 8` |
+| `8` | `GoBagLesson` | `GoBagLesson 9` |
+| `9` | `KitchenLesson` | `Kitchen Lesson 10` |
+| `10` | `BathRoomLesson` | `BathroomLesson 11` |
 
-- `CallINITfunction()`
-- `OnResetDone()`
-- `SendEvent(string eventName)`
-- `OnJuneArrives(int juneID)`
-- `OnMayArrives(int mayID)`
-- `OnInShelter(int kayID)`
-- `HurricaneWatchOnAnnounced(int hurricaneWatchID)`
-- `HurricaneWarningOnAnnounced(int hurricaneWarningID)`
+The future main menu needs a root assigned to `EntryScreen` or a separate flow-level UI controller that is deliberately kept outside this list.
 
-Outside WebGL, each function logs a debug message instead of calling JavaScript.
-
-#### `Events` and `EventsManager`
-
-Path: `Assets/Scripts/EventsManager.cs`
-
-`Events` is the string source for outbound WebGL event names. It includes major simulation milestones such as:
-
-- `ReviewEmergencyPlan`
-- `RadioBroadcast`
-- `CheckGoBag`
-- `CleanYard`
-- `CollectPlywood`
-- `JuneFirst`
-- `GoToSupermarket`
-- `GetCannedFood`
-- `GetWater`
-- `GetCrackers`
-- `HurricaneWatch`
-- `HurricaneWarning`
-- `PackClothes`
-- `PackToys`
-- `PackWater`
-- `PackFlashlight`
-- `MayArrives`
-- `CoverWindow`
-- `GetBicycle`
-- `GetToys`
-- `GetBall`
-- `ColorBook`
-- `PlayToy`
-
-`EventsManager` exposes public methods that call `WebGLBridge.SendEvent(...)`. These methods are intended for Unity animation events or scene object callbacks.
-
-#### `ObjectsHolder`
+### `ObjectsHolder`
 
 Path: `Assets/Scripts/ObjectsHolder.cs`
 
-Singleton-style holder for IDs received from WebGL and for external scene-index control.
+`ObjectsHolder` receives browser-owned ids, translates numeric scene indexes into Unity modes, and sends timer values to the active mode.
 
-Responsibilities:
+Current WebGL scene-index mapping:
 
-- Receives and stores IDs:
-  - radio
-  - June 1
-  - May
-  - Kay
-  - hurricane watch
-  - hurricane warning
-- Receives scene index from WebGL through `SetScineIndex(int index)`.
-- Converts scene indices to simulation modes.
-- Applies calendar/timer values to the currently active mode through `SetCalendarTimer(float time)`.
-
-Current scene index map:
-
-| Scene index | Mode |
+| Web scene index | `ModeName` |
 | ---: | --- |
 | `1` | `House` |
 | `2` | `ClearingGarden` |
@@ -239,95 +155,55 @@ Current scene index map:
 | `5` | `ChildrenRoom` |
 | `6` | `GardenView` |
 | `7` | `Shelter` |
+| `8` | `AfterTheHurricane` |
+| `9` | `GoBagLesson` |
+| `10` | `KitchenLesson` |
+| `11` | `BathRoomLesson` |
 
-### UI And Audio
+There is no current mapping for index `0` or `3`, and no WebGL scene index for `EntryScreen`.
 
-#### `GameModeUIController`
+Stored browser ids:
 
-Path: `Assets/Scripts/GameModeUIController.cs`
+- radio;
+- June 1;
+- May;
+- Kay;
+- hurricane watch;
+- hurricane warning;
+- all clear;
+- Kelan's parents.
 
-Listens to `SimulationManager.OnModeChanged` and enables/disables configured GameObjects per mode.
+`SetCalendarTimer(float)` dispatches timer state to `House`, `SuperMarket`, `ChildrenRoom`, `GardenView`, `Shelter`, `AfterTheHurricane`, `GoBagLesson`, `KitchenLesson`, and `BathRoomLesson`.
 
-Data structure:
+## Mode Registry
 
-- `ModeUIConfig`
-  - `ModeName mode`
-  - `List<GameObject> objectsToEnable`
+### `EntryScreen`
 
-The controller builds a set of all configured objects and only activates the ones assigned to the new mode.
+Class: `EntryScreenMod`
 
-#### `AudioManager`
+Current status:
 
-Path: `Assets/Scripts/AudioManager.cs`
+- registered in `ModeName` and `GameModeFactory`;
+- serialized on `SimulationManager`;
+- all lifecycle methods are empty;
+- no UI root is assigned in `GameModeUIController`;
+- not mapped by `ObjectsHolder.SetScineIndex`.
 
-Singleton-style audio service.
+This is the natural host mode for the future Unity-native main menu, but it is currently only a placeholder.
 
-Responsibilities:
+### `House`
 
-- Stores `AudioManager.Instance`.
-- Controls an `AudioMixer` with exposed parameters:
-  - `MasterVolume`
-  - `MusicVolume`
-  - `SFXVolume`
-- Stores volume and mute values in `PlayerPrefs`.
-- Plays one-shot SFX and music.
-- Toggles a sound settings UI panel from a configured button.
-- Pauses/unpauses sound when the simulation state changes.
-- Provides special methods for announcement and song playback:
-  - `PlayAnnouncement()`
-  - `PlaySong()`
+Class: `HouseMod`
 
-#### `AudioSettingsUI`
+Primary behavior:
 
-Path: `Assets/Scripts/AudioSettingsUI.cs`
+- starts the initial house animation;
+- runs the calendar timer;
+- controls radio announcement and music;
+- controls emergency-plan, go-bag, TV, and parent-panic sequences;
+- can switch directly to `ClearingGarden`.
 
-Connects sliders/toggle UI controls to `AudioManager`:
-
-- Master volume slider
-- Music volume slider
-- SFX volume slider
-- Master mute toggle
-
-#### `ScreenFader`
-
-Path: `Assets/ScreenFader.cs`
-
-Singleton-style screen fade helper using a full-screen `Image`.
-
-Provides:
-
-- `Fade(Action midAction = null)`
-- `FadeAsync(Func<Task> midAction = null)`
-- `FadeIn()`
-- `FadeOut()`
-
-Used by `HouseMod` to transition between visual states.
-
-### Simulation Modes
-
-#### `EntryScreenMod`
-
-Path: `Assets/Scripts/Modes/EntryScreenMod.cs`
-
-Implements `ISimulationMode`, but all lifecycle methods are currently empty. It is a placeholder mode.
-
-#### `HouseMod`
-
-Path: `Assets/Scripts/Modes/HouseMod.cs`
-
-Controls the starting house sequence.
-
-Main responsibilities:
-
-- Starts the house animation with `firstScineAnim.SetTrigger("House")`.
-- Runs a calendar timer and triggers June 1 arrival.
-- Plays radio announcements and radio song audio.
-- Coordinates review plan and go-bag sequences.
-- Uses `ScreenFader` for TV watching and parent panic transitions.
-- Sends `RadioBroadcast` through `WebGLBridge`.
-- Transitions to `ClearingGarden` after TV/go-bag sequences.
-
-Important public WebGL-facing methods:
+External/public action entry points:
 
 - `RadioOnAnnouncement()`
 - `RadioPlayingSong()`
@@ -338,43 +214,33 @@ Important public WebGL-facing methods:
 - `ParentsPanic()`
 - `May1onArrivesAnim()`
 
-#### `ClearingGardenMod`
+Known outbound events are split between this class and `AnimationEvent`: `RadioBroadcast`, `ReviewEmergencyPlan`, `CheckGoBag`, `JuneFirst`, and `MayArrives`.
 
-Path: `Assets/Scripts/Modes/ClearingGardenMod.cs`
+### `ClearingGarden`
 
-Controls outdoor preparation actions involving the mom and dad characters.
+Class: `ClearingGardenMod`
 
-Architecture:
+Primary behavior:
 
-- Uses a private `Anim` enum:
-  - `Walk`
-  - `PlyWood`
-  - `Cleaning`
-  - `Watering`
-- Uses an internal `AnimationQueueState` class for independent mom and dad queues.
-- Mom animation map:
-  - `Cleaning`
-  - `Watering`
-- Dad animation map:
-  - `Walk`
-  - `PlyWood`
+- maintains independent animation queues for mother and father;
+- maps `Cleaning` and `Watering` to mother;
+- maps `Walk` and `PlyWood` to father;
+- drives leaves, plywood, character movement, and watering particles.
 
-Public WebGL/editor-facing actions:
+Action entry points:
 
 - `OnClearYard()`
 - `OnGatherPlywood()`
 - `GoForWalk()`
 - `OnWateringTheFlowers()`
 
-It waits for `OnSimulationStart()` before processing animation coroutines.
+`CleanYard` and `CollectPlywood` are reported by animation helper components rather than directly by this mode. Direct sends inside the mode are commented out.
 
-#### `SuperMarketMode`
+### `SuperMarket`
 
-Path: `Assets/Scripts/Modes/SuperMarketMode.cs`
+Class: `SuperMarketMode`
 
-Controls the supermarket trip and item collection sequences.
-
-Enum: `AnimationsInSuper`
+Queue commands:
 
 - `Tosupermarket`
 - `GetCannedFood`
@@ -387,313 +253,328 @@ Enum: `AnimationsInSuper`
 - `Announcement`
 - `WayToSupermarketAnimation`
 
-Architecture:
+Primary command entry point: `SuperQueueAnimation(string)`.
 
-- Uses a queue of `AnimationsInSuper`.
-- Prevents duplicate queued/current animation.
-- Uses a dictionary from enum value to `Action<Action>` animation starters.
-- Waits for animator states or timed movement coroutines before completing queued steps.
+Known outbound events:
 
-Main responsibilities:
+- `JuneFirst`
+- `GoToSupermarket`
+- `GetWater`
+- `GetCannedFood`
+- `GetCrackers`
 
-- Activates car travel/supermarket objects.
-- Plays radio announcement in the car.
-- Sends `JuneFirst` when its timer expires.
-- Sends item events such as `GetWater`, `GetCannedFood`, and `GetCrackers`.
-- Moves the mom character to item positions and back to the cart.
+Cheese, eggs, chicken, and fish use the animation queue but currently do not have dedicated values in the shared `Events` enum.
 
-Primary WebGL-facing method:
+### `ChildrenRoom`
 
-- `SuperQueueAnimation(string animationName)`
+Class: `ChildrenRoomMode`
 
-#### `ChildrenRoomMode`
+This mode uses the shared `Animations` enum for both room and later garden actions. Its own queue handles packing actions plus `HurricaneWatchAnnouncement`.
 
-Path: `Assets/Scripts/Modes/ChildrenRoomMode.cs`
+Primary command entry point: `AddAnimationFromWeb(string)`.
 
-Controls children room packing and hurricane watch announcement.
+Known actions/events include:
 
-Enum: `Animations`
+- clothes, fruits, flashlight, lamp, toy, aquarium, water, scissors, and chicken pickup;
+- `PackClothes`, `PackToys`, `PackWater`, and `PackFlashlight`;
+- hurricane-watch playback and browser id callback;
+- `HurricaneWatch` completion event.
 
-Shared enum currently includes children room and garden actions:
+Some outbound sends are implemented inside shared coroutines, while older direct sends are commented out.
 
-- `KelenTakeTshirt`
-- `KelenTakeFruits`
-- `KelenTakeFlashlight`
-- `KelenTakeLamp`
-- `KelenTakeToy`
-- `KelenTakeAquarium`
-- `KelenTakeWater`
-- `KelenTakeScissors`
-- `KelenTakeChicken`
-- `kelanGoforWalk`
-- `kelanTakeBall`
-- `kelanTaketoys`
-- `keyTakesBicycle`
-- `keyPickFlowers`
-- `HurricaneWatchAnnouncement`
+### `GardenView`
 
-Architecture:
+Class: `GardenViewMode`
 
-- Uses a queue of `Animations`.
-- Maps supported room animations to callbacks.
-- Moves Kelen to room objects, toggles hand-held objects, and returns to the bag.
-- Has shared helper coroutines for left-side room items and right-side toy items.
-- Starts a looping Kelen play coroutine until hurricane watch interrupts it.
+Primary behavior:
 
-Main WebGL/editor-facing methods:
+- separate queues for Kelan and Key;
+- Kelan actions: walk, ball, toys;
+- Key actions: bicycle, flowers;
+- mother actions: cover window and water garden;
+- hurricane warning timer and announcement.
 
-- `AddAnimationFromWeb(string animationName)`
-- `SendHurricaneWatch()`
-- item methods such as `KelenTakeWater`, `KelenTakeToy`, `KelenTakeTshirt`
+Command entry points:
 
-Outbound events include:
-
-- `PackClothes`
-- `PackToys`
-- `PackWater`
-- `PackFlashlight`
-- `HurricaneWatch`
-
-#### `GardenViewMode`
-
-Path: `Assets/Scripts/Modes/GardenViewMode.cs`
-
-Controls later garden view actions for mom, Kelan, and Key.
-
-Architecture:
-
-- Uses the shared `Animations` enum.
-- Uses separate `AnimationQueueState` instances for Kelan and Key.
-- Has separate animation maps:
-  - Kelan: `kelanTakeBall`, `kelanGoforWalk`, `kelanTaketoys`
-  - Key: `keyPickFlowers`, `keyTakesBicycle`
-- Exposes completion `Action` callbacks used by `GardenTakesObjects` to remove held objects.
-
-Main responsibilities:
-
-- Sends hurricane warning announcement callback after timer expiration.
-- Plays radio announcement animation.
-- Handles mom covering windows and watering garden.
-- Handles Kelan taking toys/ball and going for a walk.
-- Handles Key taking bicycle and picking flowers.
-
-Primary WebGL-facing methods:
-
-- `AddKelanAnimationFromWeb(string animationName)`
-- `AddKeyAnimationFromWeb(string animationName)`
+- `AddKelanAnimationFromWeb(string)`
+- `AddKeyAnimationFromWeb(string)`
 - `SendHurricaneWarning()`
 - `HurricaneWarningAnnouncement()`
 - `RadioOnAnnouncement()`
 - `OnCoversWindow()`
 - `OnWaterGarden()`
 
-Note: `Cleanup()` and `OnSimulationEnd()` currently throw `NotImplementedException`.
+Known outbound events are distributed between this mode, `GardenTakesObjects`, and `AnimationEvent`: `HurricaneWarning`, `CoverWindow`, `GetBicycle`, `GetToys`, and `GetBall`.
 
-#### `ShelterMod`
+Current blocker: both `Cleanup()` and `OnSimulationEnd()` throw `NotImplementedException`. Switching away from this mode calls `Cleanup()` and can break the new menu/progression flow.
 
-Path: `Assets/Scripts/Modes/ShelterMod.cs`
+### `Shelter`
 
-Controls shelter behavior after the family reaches shelter.
+Class: `ShelterMod`
 
-Enum: `ShelterAnimations`
+Queue commands:
 
 - `ColoursABook`
 - `PlaysWithToy`
 - `PlaysOutside`
 - `TalksToAStranger`
 
-Architecture:
+Primary command entry point: `ShelterQueueAnimation(string)`.
 
-- Uses a queue of `ShelterAnimations`.
-- Avoids duplicate queued/current animation.
-- Maps each enum value to an animation coroutine.
-- Sends shelter-related events back to WebGL.
+Known outbound events:
 
-Main responsibilities:
+- `ColorBook`
+- `PlayToy`
+- browser-specific `OnInShelter(kayId)` timer callback.
 
-- Starts a shelter timer.
-- Calls `WebGLBridge.OnInShelter(ObjectsHolder.instance.GetKayID())` when the timer expires.
-- Plays Kay and stranger/talk animations.
-- Sends events:
-  - `ColorBook`
-  - `PlayToy`
+There are no shared `Events` values for playing outside or talking to a stranger.
 
-Primary WebGL-facing method:
+### `AfterTheHurricane`
 
-- `ShelterQueueAnimation(string animationName)`
+Class: `AfterTheHurricane`
 
-#### `AfterTheHurricane`
+Queue commands:
 
-Path: `Assets/Scripts/Modes/AfterTheHurricane.cs`
+- `picksUpBranches`
+- `picksUpBottles`
+- `picksUpBrockenGlass`
+- `picksUpElectricWires`
+- `FatherPicksUpBrockenGlass`
+- `FatherPicksUpElectricWires`
+- `GoForWalk`
+- `MotherCutWood`
 
-Currently a plain `MonoBehaviour` with empty `Start()` and `Update()` methods. It is not part of `ModeName` and is not registered in `GameModeFactory`, so it is not an active simulation mode yet.
+Primary command entry point: `AfterHurricaneQueueAnimation(string)`.
 
-### Scene Object And Animation Event Helpers
+Known outbound events:
 
-#### `AnimationEvent`
+- `PickBranches`
+- `PickBottles`
+- `PickGlass`
+- `CutBranches`
+- `AllClear`
+- browser-specific `AllClear(allClearId)` timer callback.
 
-Path: `Assets/Scripts/AnimationEvent.cs`
+Not every queue command currently produces a distinct shared event.
 
-General animation event receiver.
+### `GoBagLesson`
 
-Responsibilities:
+Class: `GoBagLesson`
 
-- Changes animator trigger by string.
-- Activates planks one by one.
-- Sends `CollectPlywood`, `CoverWindow`, `JuneFirst`, and `MayArrives`.
-- Calls specific WebGL ID callbacks for June and May.
-- Toggles a text canvas.
-- Marks `HouseMod.canPlayEmergencyPlan = true` after page/text animation finishes.
+Queue commands:
 
-#### `LeavsAnimation`
+- `KelenTakeTshirt`
+- `KelenTakeFlashlight`
+- `KelenTakeLamp`
+- `KelenTakeToy`
+- `KelenTakeWater`
+- `KelanTakeBall`
+- `KelenTakeBooks`
+- `KelenTakeCandels`
+- `ColoringBook`
+- `KelenTakeScissors`
 
-Path: `Assets/Scripts/LeavsAnimation.cs`
+Primary command entry point: `AddGoBagAnimationFromWeb(string)`.
 
-Controls a small leaf cleanup effect:
+Known outbound events:
 
-- Disables individual leaf GameObjects.
-- Plays a particle system.
-- Enables pile-of-leaves GameObjects.
+- `GobagReminder`
+- `PackClothes`
+- `PackFlashlight`
+- `PackToys`
+- `PackWater`
+- `PackBook`
+- browser-specific `GivesReminder(kelanParentsId)` callback.
 
-#### `LeavsAnimationEvent`
+Several distractor actions intentionally send `Events.Empty`, including current ball, lamp, coloring-book, scissors, and candles paths. The future validator must define whether `Empty` means incorrect, ignored, or missing event coverage.
 
-Path: `Assets/Scripts/LeavsAnimationEvent.cs`
+### `KitchenLesson`
 
-Animation event receiver that advances through multiple `LeavsAnimation` instances and sends `CleanYard`.
+Class: `KitchenLesson`
 
-#### `GardenTakesObjects`
+Queue commands:
 
-Path: `Assets/Scripts/GardenTakesObjects.cs`
+- `KayTakeChees`
+- `KayTakeEggs`
+- `KayTakeChicken`
+- `KayTakeFish`
+- `KayTakeCannedFood`
+- `KayTakeCrackers`
+- `KayTakeWater`
 
-Maps garden object types to scene objects and hand-held objects.
+Primary command entry point: `AddGoBagKitchenAnimationFromWeb(string)`.
 
-Enum: `TakesObjectType`
+Known outbound events:
 
-- `Toys`
-- `Ball`
-- `Bicycle`
-- `Flowers`
+- `GobagReminder`
+- `PackCannedFood`
+- `PackCrackers`
+- `PackWater`
+- browser-specific `GivesReminder(kelanParentsId)` callback.
 
-It sends events for taken objects and subscribes to `GardenViewMode` completion callbacks to remove the held object.
+Cheese, eggs, chicken, and fish currently send `Events.Empty`, so they cannot yet be distinguished by the shared event stream.
 
-#### `RoomTakesObjects`
+### `BathRoomLesson`
 
-Path: `Assets/Scripts/RoomTakesObjects.cs`
+Class: `BathRoomLesson`
 
-Scene reference holder for children room packable objects. `HandleObjectTaken(string objectName)` toggles room objects off and hand objects on.
+Queue commands:
 
-Supported names:
+- `PackFirstAid`
+- `PackToothbrush`
+- `PackWipes`
+- `PackSoap`
+- `PuckHairDryer`
+- `PackPump`
+- `PackWashingGel`
+- `PackCleaningSpray`
 
-- `TShirt`
-- `Fruits`
-- `FlashLight`
-- `Lamp`
-- `Toy`
-- `Aquarium`
-- `Water`
-- `Scissors`
-- `Chickens`
+Primary command entry point: `AddGoBagBathroomAnimationFromWeb(string)`.
 
-#### `SuperTakesObjects`
+Known outbound events:
 
-Path: `Assets/Scripts/SuperTakesObjects.cs`
+- `GobagReminder`
+- `PackFirstAid`
+- `PackToothbrush`
+- `PackWipes`
+- `PackSoap`
+- browser-specific `GivesReminder(kelanParentsId)` callback.
 
-Scene reference holder for supermarket cart/hand item swaps.
+Hair dryer, pump, washing gel, and cleaning spray currently send `Events.Empty`. The serialized `roomToyOffset` field is unassigned and is not referenced by current code.
 
-Supported names:
+## Event and WebGL Integration
 
-- `Sardines`
-- `Water`
-- `Chips`
-- `Cheese`
-- `Eggs`
-- `Chicken`
-- `Fish`
+### Shared event catalog
 
-#### `CanvasFollow`
+Path: `Assets/Scripts/EventsManager.cs`
 
-Path: `Assets/CanvasFollow.cs`
+The `Events` enum currently contains:
 
-Simple helper that moves a canvas/object to `target.position + offset` every frame.
-
-#### `ScineSwicher`
-
-Path: `Assets/Scripts/ScineSwicher.cs`
-
-Simple GameObject switch helper. `SwitchToNextObject()` activates `nextObjectToSwitch` and deactivates the current GameObject.
-
-#### `SimulationConfig`
-
-Path: `Assets/Scripts/SimulationConfig.cs`
-
-Separate singleton-style config object with a `SimulationConfigId` property and a WebGL-facing `ResetSimulatiom()` method. The current implementation does not assign `SimulationConfigId`.
-
-### Singleton Structures
-
-The project uses several singleton/static access patterns:
-
-| Type | Pattern |
-| --- | --- |
-| `Singelton<T>` | Generic MonoBehaviour singleton base used by `SimulationManager`. |
-| `SimulationManager.Instance` | Inherited from `Singelton<SimulationManager>`. |
-| `AudioManager.Instance` | Manual static field. |
-| `ScreenFader.Instance` | Manual static property. |
-| `ObjectsHolder.instance` | Manual static field. |
-| `SimulationConfig.Instance` | Manual static property. |
-| `GardenViewMode.Instance` | Manual static property. |
-| `WebGLBridge` | Static bridge class. |
-
-## Current Data And Control Flow
-
-### Mode Switching Flow
-
-```mermaid
-flowchart TD
-    Web["WebGL / Editor input"] --> Holder["ObjectsHolder.SetScineIndex or SimulationManager.newMode"]
-    Holder --> Manager["SimulationManager.SwitchMode"]
-    Manager --> Old["Old ISimulationMode.Cleanup"]
-    Manager --> Factory["GameModeFactory.GetMode"]
-    Factory --> New["New ISimulationMode.OnSimulationStart"]
-    Manager --> UI["GameModeUIController.HandleModeChanged"]
+```text
+ReviewEmergencyPlan, RadioBroadcast, CheckGoBag, CleanYard,
+CollectPlywood, JuneFirst, GoToSupermarket, GetCannedFood,
+GetWater, GetCrackers, HurricaneWatch, HurricaneWarning,
+PackClothes, PackToys, PackWater, PackFlashlight, MayArrives,
+Empty, CoverWindow, GetBicycle, GetToys, GetBall, ColorBook,
+PlayToy, CutBranches, PickGlass, PickBottles, PickBranches,
+AllClear, GobagReminder, PackBook, PackCrackers, PackCannedFood,
+PackFirstAid, PackToothbrush, PackWipes, PackSoap
 ```
 
-### Web Event Flow
+`EventsManager` exposes animation-event-friendly methods for the older event subset. Newer modes usually call `WebGLBridge.SendEvent(...)` directly.
 
-```mermaid
-flowchart TD
-    Anim["Unity animation event / mode method"] --> EventMethod["EventsManager or direct WebGLBridge call"]
-    EventMethod --> Bridge["WebGLBridge.SendEvent or specific callback"]
-    Bridge --> JS["Web.jslib / browser host"]
-```
+There is no Unity-side subscriber event today. Sending an event informs WebGL or logs in the Editor, but native Unity gameplay validation cannot listen to it without the event layer proposed in `MB_IMPLEMENTATION_PLAN.md`.
 
-### Mode-To-Content Flow
+### Browser callback surface
 
-| Mode | Main content controlled |
+Path: `Assets/Scripts/WebGLBridge.cs`
+
+Current exported JavaScript calls:
+
+- `CallINITfunction()`
+- `OnResetDone()`
+- `SendEvent(string)`
+- `OnJuneArrives(int)`
+- `OnMayArrives(int)`
+- `OnInShelter(int)`
+- `HurricaneWatchOnAnnounced(int)`
+- `HurricaneWarningOnAnnounced(int)`
+- `AllClear(int)`
+- `GivesReminder(int)`
+
+`Assets/Plugins/Web.jslib` forwards these calls to the browser's `globals` object. Outside WebGL builds, `WebGLBridge` logs instead of invoking JavaScript.
+
+This public callback surface is a compatibility contract. The native Unity rule system should add local observation without renaming or removing these calls.
+
+## Scene Serialization Snapshot
+
+Static inspection of `SampleScene.unity` confirms:
+
+- one `SimulationManager` component;
+- all eleven `ISimulationMode` components serialized on the same GameObject;
+- one `ObjectsHolder`;
+- one `GameModeUIController`;
+- one `AudioManager` and one `AudioSettingsUI`;
+- all ten gameplay roots assigned in `GameModeUIController`;
+- no root assigned for `EntryScreen`;
+- all mode script components have their existing serialized scene references except the unused `BathRoomLesson.roomToyOffset` field;
+- only `SampleScene.unity` is enabled in Build Settings.
+
+This is repository evidence only. It does not prove that every reference, Animator state, animation event, or callback behaves correctly in Play Mode.
+
+## Supporting Components
+
+| Component | Current responsibility |
 | --- | --- |
-| `House` | House animation, radio, calendar, TV, emergency plan, go-bag, parent panic. |
-| `ClearingGarden` | Mom cleaning/watering, dad walking/gathering plywood, leaves/planks events. |
-| `SuperMarket` | Car travel, radio announcement, mom item pickup, cart item swaps. |
-| `ChildrenRoom` | Kelen item packing, Kay bag sequence, hurricane watch announcement. |
-| `GardenView` | Mom garden/window actions, Kelan/Key outdoor object actions, hurricane warning. |
-| `Shelter` | Kay shelter animations, stranger/talk interaction, shelter arrival callback. |
-| `EntryScreen` | Placeholder only. |
+| `AnimationEvent` | General animation callbacks, planks, calendar events, window cover, and emergency-plan gating |
+| `LeavsAnimation` | Leaf object and particle transitions |
+| `LeavsAnimationEvent` | Advances leaf cleanup and reports `CleanYard` |
+| `GardenTakesObjects` | Garden scene/hand object swaps and garden pickup events |
+| `RoomTakesObjects` | Children-room scene/hand object swaps |
+| `SuperTakesObjects` | Supermarket scene/hand/cart object swaps |
+| `ScreenFader` | Fade transitions used by house sequences |
+| `AudioManager` | Mixer state, saved volume, music, SFX, pause/resume |
+| `AudioSettingsUI` | Slider/toggle bindings for `AudioManager` |
+| `ScineSwicher` | Activates one configured object and deactivates the current object |
+| `SimulationConfig` | Singleton placeholder with reset entry point; current config id is not assigned by code |
 
-## Current Worktree Notes
+## Current Architectural Constraints
 
-At the time this document was created, the working tree already contained modified and untracked files unrelated to this documentation snapshot. Existing changed files included scene/animation/script changes and a new `Assets/Mission 8/` folder plus `Assets/Scripts/Modes/AfterTheHurricane.cs`. This document records the current checkout state and does not modify those files.
+These are facts to account for during implementation, not a request to refactor them immediately.
 
-## Architectural Observations
+1. Mode scripts directly own scene references, positions, Animator triggers, timers, queues, and object swaps.
+2. Several modes independently implement similar queue/dictionary/callback patterns.
+3. Browser command strings, enum names, Animator names, and object names are used as runtime identifiers.
+4. Outbound events are emitted from multiple layers: modes, animation event receivers, and object-swap helpers.
+5. Event coverage is incomplete; several selectable actions emit `Events.Empty`.
+6. Most mode cleanup methods do not fully reset queues, coroutines, timers, held objects, or Animator state.
+7. `GardenViewMode.Cleanup()` can throw during a normal mode transition.
+8. `EntryScreenMod` and its UI wiring are not implemented.
+9. Unity has no current source of truth for level objectives, accepted rules, runtime step order, completion, or progression.
+10. There is no current local event channel through which Unity UI can observe completed gameplay actions.
+11. The Editor currently auto-selects `BathRoomLesson` from the serialized `newMode` value.
+12. `SimulationManager.ResetSimulatiom()` reloads the entire scene rather than resetting one level session.
 
-This section records notable structural facts from the current implementation.
+## Missing Product Definitions
 
-1. The project already has a useful mode abstraction through `ISimulationMode`, `ModeName`, `GameModeFactory`, and `SimulationManager`.
-2. Most gameplay behavior is still scene-reference driven: large mode scripts directly hold many `GameObject`, `Animator`, `Transform`, and timer fields.
-3. WebGL integration is spread across `ObjectsHolder`, mode classes, `EventsManager`, and animation-event helpers.
-4. Several mode scripts implement their own animation queue pattern. `SuperMarketMode`, `ChildrenRoomMode`, `GardenViewMode`, `ClearingGardenMod`, and `ShelterMod` all contain similar queue/dictionary/callback logic.
-5. The project relies heavily on string-based animation triggers and string-based WebGL animation names.
-6. Several scripts expose public fields for inspector wiring; others use `[SerializeField]`. The style is mixed.
-7. Some names contain typos or inconsistent spelling, such as `Singelton`, `ScineSwicher`, `ResetSimulatiom`, `Leavs`, `weteringFlowers`, `heand`, `Mod`, `Kelen/Kelan/Key/Kay`.
-8. `AfterTheHurricane` exists as a script but is not integrated into the mode system.
-9. `GardenViewMode.Cleanup()` and `GardenViewMode.OnSimulationEnd()` currently throw `NotImplementedException`, which can break mode switching or destruction if those paths execute.
-10. The enabled build scene is only `Assets/Scenes/SampleScene.unity`; other scenes exist but are not part of current build settings.
+The code architecture is understandable enough to begin building the framework. What is still needed to author the actual levels correctly is product/content data:
 
+1. Final lesson order and grouping. Confirm whether modes `1` through `11` are one continuous course and how the three Go Bag lessons relate to the earlier simulation.
+2. A title, briefing, and learning objective for every selectable level.
+3. The available rule cards for every level, including condition, actor, action, and displayed text.
+4. The exact correct rule arrangement for every level.
+5. The runtime event sequence that counts as successful completion.
+6. Which actions are incorrect distractors, which are optional, and which should be ignored.
+7. The policy for incorrect runtime actions: feedback only, retry current step, fail attempt, or allow completion with mistakes.
+8. The completion destination for each level: next level, menu, or player choice.
+9. Whether levels are all unlocked or unlocked progressively, and whether progress must persist between sessions.
+10. Required UI languages and final copy. Stable ids can be implemented before localization, but final layout depends on the actual text.
+11. Approved visual assets for menu cards, rule cards, feedback, and result screens.
+
+The framework can be implemented with temporary data before all copy and assets are final. However, the rule definitions and completion criteria must be approved per level before that level can be considered complete.
+
+## Safe Implementation Boundary
+
+The first implementation should add orchestration around the current simulation:
+
+- menu and briefing choose a `LevelDefinition`;
+- rule builder validates the pre-start selection;
+- successful `Check` calls `SimulationManager.SwitchMode`;
+- existing mode methods continue to execute every animation and object transition;
+- a compatibility reporter mirrors existing completion callbacks into a Unity event channel while preserving WebGL calls;
+- a session controller evaluates progress and opens feedback/result UI;
+- repeated queue and animation code remains untouched until the full flow is accepted.
+
+This boundary allows the requested native Unity system to be built without changing how the current animations work.
+
+## Verification Rules
+
+For every architecture or gameplay change:
+
+1. Confirm C# compilation.
+2. Inspect serialized references and `GameModeUIController` entries.
+3. Run the affected mode in Unity Play Mode.
+4. Compare animation order, timing, audio, object swaps, and event timing with the baseline.
+5. Test switching away, retrying, and returning to menu.
+6. Build WebGL when browser callbacks are touched.
+7. Do not describe static inspection or a C# build as Play Mode verification.
