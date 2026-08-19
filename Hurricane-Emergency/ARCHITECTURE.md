@@ -7,7 +7,7 @@ _Current checkout snapshot: 2026-08-19_
 This file is the source of truth for the architecture that exists in the Unity project now.
 
 - It describes current code, scene wiring, runtime flow, and known constraints.
-- It records the implemented Go Bag, Kitchen, Children Room, and Garden View lesson slices and identifies later expansion work.
+- It records the implemented Unity-native lesson slices and identifies later expansion work.
 - The future implementation order and proposed classes are documented in `MB_IMPLEMENTATION_PLAN.md`.
 - When code or scene wiring changes, update this file in the same change.
 
@@ -35,9 +35,9 @@ Recovery scenes and the URP template are not runtime levels.
 
 ## Runtime Model
 
-Unity now owns six complete lesson flows: Go Bag, Kitchen, Children Room, Garden View, Shelter, and After the Hurricane. `MainMenu.unity` contains the persistent menu entry objects (`GameFlowController`, a `GameFlowUI.prefab` instance, camera, and `EventSystem`). The prefab contains the lesson selection, briefing, rule-builder, gameplay HUD, and result screens. `GameFlowController` only changes screen state, binds events, and supplies data to those serialized views.
+Unity now owns ten lesson flows: House, Cleaning Garden, Supermarket, Children Room, Garden View, Shelter, After the Hurricane, Go Bag, Kitchen, and Bathroom. `MainMenu.unity` contains the persistent menu entry objects (`GameFlowController`, a `GameFlowUI.prefab` instance, camera, and `EventSystem`). The prefab contains the lesson selection, briefing, rule-builder, gameplay HUD, and result screens. `GameFlowController` only changes screen state, binds events, and supplies data to those serialized views.
 
-After `Check`, `LessonLaunchContext` stores the selected level id and rule ids in order and loads `SampleScene.unity`. The gameplay scene restores that selection, starts `GoBagLesson`, `KitchenLesson`, `ChildrenRoomMode`, `GardenViewMode`, `ShelterMod`, or `AfterTheHurricane` through `SimulationManager`, listens to `SimulationEventChannel`, displays runtime feedback, and shows the result screen. The existing mode scripts and animation controllers remain responsible for visual behavior. The player-facing Children Room lesson intentionally maps to the existing `ModeName.ChildrenRoom` mode and `Children room` scene root.
+After `Check`, `LessonLaunchContext` stores the selected level id and rule ids in order and loads `SampleScene.unity`. The gameplay scene restores that selection, starts the matching mode through `SimulationManager`, listens to `SimulationEventChannel`, displays runtime feedback, and shows the result screen. The existing mode scripts and animation controllers remain responsible for visual behavior. House, Cleaning Garden, and Supermarket use local sequence adapters around their existing public actions; the adapters do not replace their animation logic. The player-facing Children Room lesson intentionally maps to the existing `ModeName.ChildrenRoom` mode and `Children room` scene root.
 
 `SampleScene.unity` still contains all simulation lesson roots and switches between them by `ModeName`; it is not duplicated per lesson.
 
@@ -68,6 +68,9 @@ Current authored lesson data:
 | Asset | Responsibility |
 | --- | --- |
 | `Assets/Data/Lessons/LevelCatalog.asset` | Ordered list used by the menu and gameplay scene |
+| `Assets/Data/Lessons/HouseLesson.asset` | House copy, mode, ordered actions, distractors, thumbnail, and completion events |
+| `Assets/Data/Lessons/CleaningGardenLesson.asset` | Cleaning Garden copy, mode, ordered actions, distractors, thumbnail, and completion events |
+| `Assets/Data/Lessons/SupermarketLesson.asset` | Supermarket copy, mode, ordered supplies, distractors, thumbnail, and completion events |
 | `Assets/Data/Lessons/GoBagLesson.asset` | Go Bag copy, mode, required enum items, distractors, thumbnail, and opening events |
 | `Assets/Data/Lessons/KitchenLesson.asset` | Kitchen copy, mode, required enum items, distractors, thumbnail, and opening events |
 | `Assets/Data/Lessons/BedroomLesson.asset` | Children Room copy, mode, required enum items, distractors, thumbnail, and opening events |
@@ -75,7 +78,7 @@ Current authored lesson data:
 | `Assets/Data/Lessons/ShelterLesson.asset` | Shelter copy, mode, required enum items, distractors, thumbnail, and opening events |
 | `Assets/Data/Lessons/AfterTheHurricaneLesson.asset` | After the Hurricane copy, mode, required enum items, distractors, thumbnail, and opening events |
 
-`LevelDefinition` does not serialize animation command strings or duplicate runtime rule records. Designers choose the correct ordered items and distractors through `LessonRuleItem` enum lists. `LessonRuleItemCatalog` maps each enum value to the existing mode command, stable rule id, label, and completion event. A mode mismatch or duplicate item is reported as a configuration error.
+`LevelDefinition` does not serialize animation command strings or duplicate runtime rule records. Designers choose the correct ordered items and distractors through `LessonRuleItem` enum lists. `LessonRuleItemCatalog` maps each enum value to the existing mode command, stable rule id, label, and completion event. A mode mismatch or duplicate item is reported as a configuration error. The catalog order follows the course flow: House, Cleaning Garden, Supermarket, Children Room, Garden View, Shelter, After the Hurricane, Go Bag, Kitchen, and Bathroom.
 
 `Tools/Hurricane/Rebuild Lesson Data Assets` intentionally restores the lesson assets to project defaults. Normal edits are made directly in the assets. Rebuilding Game Flow UI only creates missing lesson assets and does not overwrite existing lesson configuration.
 
@@ -105,7 +108,7 @@ EventsManager or WebGLBridge
 Browser host callbacks
 ```
 
-Go Bag, Kitchen, Children Room, Garden View, Shelter, and After the Hurricane no longer depend on the browser host for orchestration or rule validation. WebGL remains a supported build target and compatibility callback bridge.
+All ten catalog lessons no longer depend on the browser host for orchestration or rule validation. WebGL remains a supported build target and compatibility callback bridge.
 
 ## Core Components
 
@@ -577,7 +580,7 @@ These are facts to account for during implementation, not a request to refactor 
 6. Most mode cleanup methods do not fully reset queues, coroutines, timers, held objects, or Animator state.
 7. `GardenViewMode.Cleanup()` now performs a safe reset during a normal mode transition.
 8. `EntryScreenMod` remains unused; the Unity-native menu is owned by `MainMenu.unity` and `GameFlowController`.
-9. `LevelCatalog.asset` and its referenced `LevelDefinition` assets are the source of truth for Go Bag, Kitchen, Children Room, Garden View, Shelter, and After the Hurricane objectives, accepted enum items, distractors, thumbnails, and runtime event order.
+9. `LevelCatalog.asset` and its referenced `LevelDefinition` assets are the source of truth for all ten lesson objectives, accepted enum items, distractors, thumbnails, and runtime event order.
 10. `SimulationEventChannel` exposes completed gameplay actions to the active Unity lesson session while preserving WebGL output.
 11. The Editor currently auto-selects `House` from the serialized `newMode` value before the Unity-native gameplay flow switches to the selected lesson.
 12. `SimulationManager.ResetSimulatiom()` reloads the entire scene rather than resetting one level session.

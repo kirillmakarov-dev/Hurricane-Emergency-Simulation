@@ -1,5 +1,15 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
+
+public enum HouseAnimations
+{
+    RadioAnnouncement,
+    ReviewEmergencyPlan,
+    CheckGoBag,
+    PlayRadioSong,
+    ParentsPanic
+}
 
 public class HouseMod : MonoBehaviour, ISimulationMode
 {
@@ -95,6 +105,94 @@ public class HouseMod : MonoBehaviour, ISimulationMode
         firstScineAnim.SetTrigger("House");
         //calendarTimer = 0;
         timerRun = true;
+    }
+
+    public void PlayConfiguredSequence(IReadOnlyList<string> animationNames)
+    {
+        StartCoroutine(PlayConfiguredSequenceCoroutine(animationNames));
+    }
+
+    private IEnumerator PlayConfiguredSequenceCoroutine(IReadOnlyList<string> animationNames)
+    {
+        for (int i = 0; i < animationNames.Count; i++)
+        {
+            if (!System.Enum.TryParse(animationNames[i], true, out HouseAnimations animation))
+            {
+                Debug.LogWarning($"Unknown House lesson command: {animationNames[i]}");
+                continue;
+            }
+
+            Events expectedEvent = GetExpectedEvent(animation);
+            bool eventReceived = false;
+            void HandleEvent(SimulationEventData eventData)
+            {
+                if (eventData.Mode == ModeName.House && eventData.EventType == expectedEvent)
+                {
+                    eventReceived = true;
+                }
+            }
+
+            if (expectedEvent != Events.Empty)
+            {
+                SimulationEventChannel.EventRaised += HandleEvent;
+            }
+
+            PlayConfiguredAnimation(animation);
+
+            if (expectedEvent == Events.Empty)
+            {
+                WebGLBridge.SendEvent(Events.Empty.ToString());
+                yield return new WaitForSeconds(2f);
+            }
+            else
+            {
+                float timeout = 30f;
+                while (!eventReceived && timeout > 0f)
+                {
+                    timeout -= Time.unscaledDeltaTime;
+                    yield return null;
+                }
+
+                SimulationEventChannel.EventRaised -= HandleEvent;
+                if (!eventReceived)
+                {
+                    Debug.LogWarning($"House lesson command timed out: {animation}");
+                }
+            }
+        }
+    }
+
+    private void PlayConfiguredAnimation(HouseAnimations animation)
+    {
+        switch (animation)
+        {
+            case HouseAnimations.RadioAnnouncement:
+                RadioOnAnnouncement();
+                break;
+            case HouseAnimations.ReviewEmergencyPlan:
+                OnReviewPlan();
+                break;
+            case HouseAnimations.CheckGoBag:
+                OnCheckGobag();
+                break;
+            case HouseAnimations.PlayRadioSong:
+                RadioPlayingSong();
+                break;
+            case HouseAnimations.ParentsPanic:
+                ParentsPanic();
+                break;
+        }
+    }
+
+    private static Events GetExpectedEvent(HouseAnimations animation)
+    {
+        return animation switch
+        {
+            HouseAnimations.RadioAnnouncement => Events.RadioBroadcast,
+            HouseAnimations.ReviewEmergencyPlan => Events.ReviewEmergencyPlan,
+            HouseAnimations.CheckGoBag => Events.CheckGoBag,
+            _ => Events.Empty
+        };
     }
 
     public void RadioOnAnnouncement() //called from WebGL

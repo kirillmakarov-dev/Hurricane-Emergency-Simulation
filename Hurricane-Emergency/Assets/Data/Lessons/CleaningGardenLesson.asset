@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e4185c8be4db9bf4ea27a7c2ecd734f8, type: 3}
+  m_Name: CleaningGardenLesson
+  m_EditorClassIdentifier: Assembly-CSharp::LevelDefinition
+  levelId: cleaning-garden-lesson
+  title: Cleaning Garden
+  briefing: The family is preparing the yard before strong hurricane winds arrive.
+    Choose the actions that reduce outdoor hazards.
+  objective: Clear loose yard debris, then gather plywood for protecting the house.
+  mode: 2
+  thumbnail: {fileID: 21300000, guid: 60736e71aa8fb6d44b33a1f4f5dfd3e3, type: 3}
+  requiredItems: 3300000034000000
+  distractors: 3500000036000000
+  openingRuntimeEvents: []

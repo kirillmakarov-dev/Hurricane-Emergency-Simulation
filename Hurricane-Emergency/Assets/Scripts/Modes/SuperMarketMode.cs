@@ -95,6 +95,43 @@ public class SuperMarketMode : MonoBehaviour, ISimulationMode
         }
     }
 
+    public void PlayConfiguredSequence(IReadOnlyList<string> animationNames)
+    {
+        StartCoroutine(PlayConfiguredSequenceCoroutine(animationNames));
+    }
+
+    private IEnumerator PlayConfiguredSequenceCoroutine(IReadOnlyList<string> animationNames)
+    {
+        if (!supermarketMainObject.activeSelf)
+        {
+            bool arrivedAtSupermarket = false;
+            WayToSupermarketAnimation(() => arrivedAtSupermarket = true);
+            yield return new WaitUntil(() => arrivedAtSupermarket);
+        }
+
+        for (int i = 0; i < animationNames.Count; i++)
+        {
+            if (!Enum.TryParse(animationNames[i], true, out AnimationsInSuper animation) ||
+                !animationMap.TryGetValue(animation, out Action<Action> startAnimation))
+            {
+                Debug.LogWarning($"Unknown Supermarket lesson command: {animationNames[i]}");
+                continue;
+            }
+
+            bool finished = false;
+            startAnimation(() => finished = true);
+            yield return new WaitUntil(() => finished);
+
+            if (animation is AnimationsInSuper.GetCheese or
+                AnimationsInSuper.GetEggs or
+                AnimationsInSuper.GetChicken or
+                AnimationsInSuper.GetFish)
+            {
+                WebGLBridge.SendEvent(Events.Empty.ToString());
+            }
+        }
+    }
+
     private IEnumerator ProcessQueue()
     {
         isPlaying = true;

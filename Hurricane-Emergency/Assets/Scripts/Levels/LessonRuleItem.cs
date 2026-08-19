@@ -53,7 +53,26 @@ public enum LessonRuleItem
     [InspectorName("Bathroom / Hair dryer")] BathroomHairDryer = 42,
     [InspectorName("Bathroom / Pump")] BathroomPump = 43,
     [InspectorName("Bathroom / Washing gel")] BathroomWashingGel = 44,
-    [InspectorName("Bathroom / Cleaning spray")] BathroomCleaningSpray = 45
+    [InspectorName("Bathroom / Cleaning spray")] BathroomCleaningSpray = 45,
+
+    [InspectorName("House / Radio announcement")] HouseRadioAnnouncement = 46,
+    [InspectorName("House / Review emergency plan")] HouseReviewEmergencyPlan = 47,
+    [InspectorName("House / Check Go Bag")] HouseCheckGoBag = 48,
+    [InspectorName("House / Play radio song")] HousePlayRadioSong = 49,
+    [InspectorName("House / Parents panic")] HouseParentsPanic = 50,
+
+    [InspectorName("Cleaning Garden / Clear yard")] CleaningGardenClearYard = 51,
+    [InspectorName("Cleaning Garden / Gather plywood")] CleaningGardenGatherPlywood = 52,
+    [InspectorName("Cleaning Garden / Water flowers")] CleaningGardenWaterFlowers = 53,
+    [InspectorName("Cleaning Garden / Go for a walk")] CleaningGardenGoForWalk = 54,
+
+    [InspectorName("Supermarket / Canned food")] SupermarketCannedFood = 55,
+    [InspectorName("Supermarket / Crackers")] SupermarketCrackers = 56,
+    [InspectorName("Supermarket / Water")] SupermarketWater = 57,
+    [InspectorName("Supermarket / Cheese")] SupermarketCheese = 58,
+    [InspectorName("Supermarket / Eggs")] SupermarketEggs = 59,
+    [InspectorName("Supermarket / Chicken")] SupermarketChicken = 60,
+    [InspectorName("Supermarket / Fish")] SupermarketFish = 61
 }
 
 public readonly struct LessonRuleDescriptor
@@ -247,6 +266,57 @@ public static class LessonRuleItemCatalog
             LessonRuleItem.BathroomCleaningSpray => Create(
                 "bathroom-cleaning-spray", "Pack cleaning spray", "This is not required for the bathroom lesson.",
                 BathRoomLesson.BathRoomAnimations.PackCleaningSpray, Events.Empty, ModeName.BathRoomLesson),
+
+            LessonRuleItem.HouseRadioAnnouncement => Create(
+                "house-radio-announcement", "Listen to the radio announcement", "Listen for official hurricane information.",
+                HouseAnimations.RadioAnnouncement, Events.RadioBroadcast, ModeName.House),
+            LessonRuleItem.HouseReviewEmergencyPlan => Create(
+                "house-review-emergency-plan", "Review the emergency plan", "Review the family plan before the storm arrives.",
+                HouseAnimations.ReviewEmergencyPlan, Events.ReviewEmergencyPlan, ModeName.House),
+            LessonRuleItem.HouseCheckGoBag => Create(
+                "house-check-go-bag", "Check the Go Bag", "Make sure the emergency bag is ready to take.",
+                HouseAnimations.CheckGoBag, Events.CheckGoBag, ModeName.House),
+            LessonRuleItem.HousePlayRadioSong => Create(
+                "house-play-radio-song", "Play music on the radio", "Music does not provide the emergency information the family needs.",
+                HouseAnimations.PlayRadioSong, Events.Empty, ModeName.House),
+            LessonRuleItem.HouseParentsPanic => Create(
+                "house-parents-panic", "Parents panic", "Stay calm and follow the emergency plan.",
+                HouseAnimations.ParentsPanic, Events.Empty, ModeName.House),
+
+            LessonRuleItem.CleaningGardenClearYard => Create(
+                "cleaning-garden-clear-yard", "Clear loose yard debris", "Remove loose leaves and debris before strong winds arrive.",
+                ClearingGardenAnimations.ClearYard, Events.CleanYard, ModeName.ClearingGarden),
+            LessonRuleItem.CleaningGardenGatherPlywood => Create(
+                "cleaning-garden-gather-plywood", "Gather plywood", "Prepare plywood for protecting the house.",
+                ClearingGardenAnimations.GatherPlywood, Events.CollectPlywood, ModeName.ClearingGarden),
+            LessonRuleItem.CleaningGardenWaterFlowers => Create(
+                "cleaning-garden-water-flowers", "Water the flowers", "Watering flowers is not part of hurricane preparation.",
+                ClearingGardenAnimations.WaterFlowers, Events.Empty, ModeName.ClearingGarden),
+            LessonRuleItem.CleaningGardenGoForWalk => Create(
+                "cleaning-garden-go-for-walk", "Go for a walk", "The family should prepare the property instead of leaving for a walk.",
+                ClearingGardenAnimations.GoForWalk, Events.Empty, ModeName.ClearingGarden),
+
+            LessonRuleItem.SupermarketCannedFood => Create(
+                "supermarket-canned-food", "Get canned food", "Choose shelf-stable food for the emergency supply.",
+                AnimationsInSuper.GetCannedFood, Events.GetCannedFood, ModeName.SuperMarket),
+            LessonRuleItem.SupermarketCrackers => Create(
+                "supermarket-crackers", "Get crackers", "Choose dry food that is easy to store and carry.",
+                AnimationsInSuper.GetCrackers, Events.GetCrackers, ModeName.SuperMarket),
+            LessonRuleItem.SupermarketWater => Create(
+                "supermarket-water", "Get water", "Add drinking water to the family emergency supply.",
+                AnimationsInSuper.GetWater, Events.GetWater, ModeName.SuperMarket),
+            LessonRuleItem.SupermarketCheese => Create(
+                "supermarket-cheese", "Get cheese", "Choose food that can stay safe without refrigeration.",
+                AnimationsInSuper.GetCheese, Events.Empty, ModeName.SuperMarket),
+            LessonRuleItem.SupermarketEggs => Create(
+                "supermarket-eggs", "Get eggs", "Choose food that can stay safe without refrigeration.",
+                AnimationsInSuper.GetEggs, Events.Empty, ModeName.SuperMarket),
+            LessonRuleItem.SupermarketChicken => Create(
+                "supermarket-chicken", "Get chicken", "Choose food that can stay safe without refrigeration.",
+                AnimationsInSuper.GetChicken, Events.Empty, ModeName.SuperMarket),
+            LessonRuleItem.SupermarketFish => Create(
+                "supermarket-fish", "Get fish", "Choose food that can stay safe without refrigeration.",
+                AnimationsInSuper.GetFish, Events.Empty, ModeName.SuperMarket),
             _ => default
         };
 

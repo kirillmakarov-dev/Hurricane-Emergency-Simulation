@@ -3,6 +3,14 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+public enum ClearingGardenAnimations
+{
+    ClearYard,
+    GatherPlywood,
+    WaterFlowers,
+    GoForWalk
+}
+
 public class ClearingGardenMod : MonoBehaviour, ISimulationMode
 {
     public GameObject dadAnimator;
@@ -97,6 +105,46 @@ public class ClearingGardenMod : MonoBehaviour, ISimulationMode
 
             // OnGatherPlywood();
 
+        }
+    }
+
+    public void PlayConfiguredSequence(IReadOnlyList<string> animationNames)
+    {
+        StartCoroutine(PlayConfiguredSequenceCoroutine(animationNames));
+    }
+
+    private IEnumerator PlayConfiguredSequenceCoroutine(IReadOnlyList<string> animationNames)
+    {
+        for (int i = 0; i < animationNames.Count; i++)
+        {
+            if (!Enum.TryParse(animationNames[i], true, out ClearingGardenAnimations animation))
+            {
+                Debug.LogWarning($"Unknown Cleaning Garden lesson command: {animationNames[i]}");
+                continue;
+            }
+
+            bool finished = false;
+            Action onComplete = () => finished = true;
+
+            switch (animation)
+            {
+                case ClearingGardenAnimations.ClearYard:
+                    StartMomCleaning(onComplete);
+                    break;
+                case ClearingGardenAnimations.GatherPlywood:
+                    StartGatherPlywood(onComplete);
+                    break;
+                case ClearingGardenAnimations.WaterFlowers:
+                    WebGLBridge.SendEvent(Events.Empty.ToString());
+                    StartWateringFlowers(onComplete);
+                    break;
+                case ClearingGardenAnimations.GoForWalk:
+                    WebGLBridge.SendEvent(Events.Empty.ToString());
+                    StartDadWalk(onComplete);
+                    break;
+            }
+
+            yield return new WaitUntil(() => finished);
         }
     }
 

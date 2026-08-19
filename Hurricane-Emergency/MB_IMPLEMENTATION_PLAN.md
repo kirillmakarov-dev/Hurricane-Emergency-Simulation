@@ -4,7 +4,7 @@ _Purpose: a step-by-step implementation guide for moving the current WebGL-drive
 
 ## Implementation Status
 
-The Unity-native lesson pattern is implemented for `GoBagLesson`, `KitchenLesson`, the player-facing Children Room lesson backed by `ChildrenRoomMode`, the direct-launch `Shelter` and `AfterTheHurricane` scenes, plus the garden rule sequence in `GardenViewMode`:
+The Unity-native lesson pattern is implemented for all ten current lessons: House, Cleaning Garden, Supermarket, Children Room, Garden View, Shelter, After the Hurricane, Go Bag, Kitchen, and Bathroom:
 
 - `MainMenu.unity` is build scene 0 and owns lesson selection, briefing, and rule assembly.
 - `SampleScene.unity` is build scene 1 and owns the existing simulation content.
@@ -22,12 +22,16 @@ Current lesson contracts:
 
 | Lesson | Existing mode | Accepted rule order | Runtime event order |
 | --- | --- | --- | --- |
+| House | `HouseMod` / `ModeName.House` | radio announcement, emergency plan, Go Bag check | `RadioBroadcast`, `ReviewEmergencyPlan`, `CheckGoBag` |
+| Cleaning Garden | `ClearingGardenMod` / `ModeName.ClearingGarden` | clear yard, gather plywood | `CleanYard`, `CollectPlywood` |
+| Supermarket | `SuperMarketMode` / `ModeName.SuperMarket` | canned food, crackers, water | `GoToSupermarket`, `GetCannedFood`, `GetCrackers`, `GetWater` |
 | Go Bag | `GoBagLesson` | water, flashlight, books | `GobagReminder`, `PackWater`, `PackFlashlight`, `PackBook` |
 | Kitchen | `KitchenLesson` | canned food, crackers, water | `GobagReminder`, `PackCannedFood`, `PackCrackers`, `PackWater` |
 | Children Room | `ChildrenRoomMode` / `ModeName.ChildrenRoom` | clothes, water, flashlight, toy | `HurricaneWatch`, `PackClothes`, `PackWater`, `PackFlashlight`, `PackToys` |
 | Garden View | `GardenViewMode` / `ModeName.GardenView` | toys, ball, bicycle | `HurricaneWarning`, `GetToys`, `GetBall`, `GetBicycle` |
 | Shelter | `ShelterMod` / `ModeName.Shelter` | colors a book, plays with toy | `ColorBook`, `PlayToy` |
 | After the Hurricane | `AfterTheHurricane` / `ModeName.AfterTheHurricane` | branches, bottles, cleanup | `PickBranches`, `PickBottles`, `CutBranches` |
+| Bathroom | `BathRoomLesson` / `ModeName.BathRoomLesson` | first aid kit, toothbrush, wipes, soap | `GobagReminder`, `PackFirstAid`, `PackToothbrush`, `PackWipes`, `PackSoap` |
 
 Each adapter starts the already existing animation queue and functions for its mode. It does not replace Animator controllers, clips, triggers, object swaps, movement, or timing.
 
@@ -183,7 +187,7 @@ Create the following components only as they become necessary. Their first versi
 
 #### `LevelDefinition`
 
-A `ScriptableObject` containing authored data for one lesson. This is implemented for Go Bag, Kitchen, Children Room, Garden View, Shelter, and After the Hurricane:
+A `ScriptableObject` containing authored data for one lesson. This is implemented for all ten current lessons:
 
 - stable `levelId`
 - display title and description
@@ -206,7 +210,7 @@ A shared Inspector enum for authored lesson choices. Each value is mapped once b
 - the existing animation enum command
 - the existing completion `Events` value
 
-The current enum contains every selectable item for Go Bag, Kitchen, Children Room, Garden View, Shelter, and After the Hurricane. Add the items for a new lesson before creating that lesson's `LevelDefinition` asset.
+The current enum contains every selectable item for all ten current lessons. Add the items for a new lesson before creating that lesson's `LevelDefinition` asset.
 
 #### `RuleDefinition`
 
@@ -389,7 +393,7 @@ These are two separate checks and must not be mixed:
 
 | Check | When | Purpose | Failure behavior |
 | --- | --- | --- | --- |
-| Rule validation | Player presses `Check` before play | Verify the chosen rule cards and their order | Stay in rule builder and explain what is missing or misplaced |
+| Rule launch | Player presses `Check` before play | Capture the chosen rule cards and their order without blocking launch | Load the scene and evaluate the choices during play |
 | Runtime validation | Existing scene actions complete | Verify that gameplay follows the accepted rules | Show feedback, record the mistake, and continue or fail according to level configuration |
 
 A successful pre-start `Check` creates an immutable snapshot of the accepted rule selection for the attempt. Editing rules is disabled while the simulation is running.
@@ -407,7 +411,7 @@ For every `ModeName`, create a short integration table before changing code:
 | Completion condition | Which event or state means the lesson is complete? |
 | Reset requirements | Which queues, flags, objects, timers, and subscriptions must return to their initial state? |
 
-Initial catalog to inventory:
+Implemented catalog:
 
 - `House`
 - `ClearingGarden`
@@ -420,7 +424,7 @@ Initial catalog to inventory:
 - `KitchenLesson`
 - `BathRoomLesson`
 
-Implement one representative lesson end to end first. `GoBagLesson`, `KitchenLesson`, or `BathRoomLesson` is a good candidate because these modes already expose focused action queues and event callbacks. After the vertical slice passes Play Mode testing, apply the same integration pattern to the remaining modes.
+Each catalog mode now has a Unity-native launch path. After the full flow passes manual Play Mode testing, extract repeated queue parsing and configured-sequence reporting into helpers without changing the established animation behavior.
 
 ## Recommended Folder Layout
 

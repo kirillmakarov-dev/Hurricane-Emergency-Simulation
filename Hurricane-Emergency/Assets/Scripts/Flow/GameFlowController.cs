@@ -190,6 +190,21 @@ public sealed class GameFlowController : MonoBehaviour
     {
         switch (level.Mode)
         {
+            case ModeName.House:
+                HouseMod house = SimulationManager.Instance.GetMode<HouseMod>();
+                if (house == null) return false;
+                house.PlayConfiguredSequence(commands);
+                return true;
+            case ModeName.ClearingGarden:
+                ClearingGardenMod clearingGarden = SimulationManager.Instance.GetMode<ClearingGardenMod>();
+                if (clearingGarden == null) return false;
+                clearingGarden.PlayConfiguredSequence(commands);
+                return true;
+            case ModeName.SuperMarket:
+                SuperMarketMode supermarket = SimulationManager.Instance.GetMode<SuperMarketMode>();
+                if (supermarket == null) return false;
+                supermarket.PlayConfiguredSequence(commands);
+                return true;
             case ModeName.GoBagLesson:
                 GoBagLesson goBag = SimulationManager.Instance.GetMode<GoBagLesson>();
                 if (goBag == null) return false;
@@ -396,6 +411,14 @@ public sealed class GameFlowController : MonoBehaviour
     private static string FriendlyEventName(Events eventType) => eventType switch
     {
         Events.GobagReminder => "Parents' reminder",
+        Events.RadioBroadcast => "Radio announcement",
+        Events.ReviewEmergencyPlan => "Emergency plan",
+        Events.CheckGoBag => "Go Bag check",
+        Events.CleanYard => "Yard cleanup",
+        Events.CollectPlywood => "Plywood",
+        Events.GetCannedFood => "Canned food",
+        Events.GetCrackers => "Crackers",
+        Events.GetWater => "Water",
         Events.ColorBook => "Color book",
         Events.PlayToy => "Play with toy",
         Events.HurricaneWarning => "Hurricane warning",
