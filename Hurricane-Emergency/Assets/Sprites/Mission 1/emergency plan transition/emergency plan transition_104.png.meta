@@ -1,0 +1,468 @@
+fileFormatVersion: 2
+guid: f924ebe4abc2bf6439c9d4403439d468
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -1462561873313460072
+    second: emergency plan transition_104_0
+  - first:
+      213: 8912497566814982397
+    second: emergency plan transition_104_1
+  - first:
+      213: 2740580148132741533
+    second: emergency plan transition_104_2
+  - first:
+      213: 5509824745534300858
+    second: emergency plan transition_104_3
+  - first:
+      213: -3053645503985358797
+    second: emergency plan transition_104_4
+  - first:
+      213: -8847973134910835721
+    second: emergency plan transition_104_5
+  - first:
+      213: -6275141721796114511
+    second: emergency plan transition_104_6
+  - first:
+      213: 1925329041154318322
+    second: emergency plan transition_104_7
+  - first:
+      213: -164000903196310795
+    second: emergency plan transition_104_8
+  - first:
+      213: 2409874095145388776
+    second: emergency plan transition_104_9
+  - first:
+      213: 1104781780053223825
+    second: emergency plan transition_104_10
+  - first:
+      213: -4566734314221014031
+    second: emergency plan transition_104_11
+  - first:
+      213: -4713006208882169839
+    second: emergency plan transition_104_12
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 1
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 1024
+    resizeAlgorithm: 0
+    textureFormat: 65
+    textureCompression: 1
+    compressionQuality: 81
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 1
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: emergency plan transition_104_0
+      rect:
+        serializedVersion: 2
+        x: 1294
+        y: 1028
+        width: 565
+        height: 856
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8901f17a9bfe3bbe0800000000000000
+      internalID: -1462561873313460072
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: emergency plan transition_104_1
+      rect:
+        serializedVersion: 2
+        x: 1294
+        y: 1197
+        width: 13
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: df05a8b015d8fab70800000000000000
+      internalID: 8912497566814982397
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: emergency plan transition_104_2
+      rect:
+        serializedVersion: 2
+        x: 1686
+        y: 143
+        width: 592
+        height: 817
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d9180ffdf1f780620800000000000000
+      internalID: 2740580148132741533
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: emergency plan transition_104_3
+      rect:
+        serializedVersion: 2
+        x: 1925
+        y: 958
+        width: 6
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ab2aa3ce964d67c40800000000000000
+      internalID: 5509824745534300858
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: emergency plan transition_104_4
+      rect:
+        serializedVersion: 2
+        x: 1644
+        y: 640
+        width: 41
+        height: 53
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 338ebf0d7954f95d0800000000000000
+      internalID: -3053645503985358797
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: emergency plan transition_104_5
+      rect:
+        serializedVersion: 2
+        x: 2302
+        y: 627
+        width: 40
+        height: 175
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7f3b077ff4fa53580800000000000000
+      internalID: -8847973134910835721
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: emergency plan transition_104_6
+      rect:
+        serializedVersion: 2
+        x: 1608
+        y: 581
+        width: 15
+        height: 30
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1b70c15e9d73ae8a0800000000000000
+      internalID: -6275141721796114511
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: emergency plan transition_104_7
+      rect:
+        serializedVersion: 2
+        x: 2365
+        y: 575
+        width: 13
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2ff1fb5ef8428ba10800000000000000
+      internalID: 1925329041154318322
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: emergency plan transition_104_8
+      rect:
+        serializedVersion: 2
+        x: 2349
+        y: 537
+        width: 7
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5f204262c0a59bdf0800000000000000
+      internalID: -164000903196310795
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: emergency plan transition_104_9
+      rect:
+        serializedVersion: 2
+        x: 2357
+        y: 546
+        width: 11
+        height: 22
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8ea8e82b8b7917120800000000000000
+      internalID: 2409874095145388776
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: emergency plan transition_104_10
+      rect:
+        serializedVersion: 2
+        x: 2339
+        y: 505
+        width: 13
+        height: 27
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1996562fc29f45f00800000000000000
+      internalID: 1104781780053223825
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: emergency plan transition_104_11
+      rect:
+        serializedVersion: 2
+        x: 2253
+        y: 320
+        width: 6
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1f3f4493653bf90c0800000000000000
+      internalID: -4566734314221014031
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: emergency plan transition_104_12
+      rect:
+        serializedVersion: 2
+        x: 2245
+        y: 304
+        width: 6
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1182e57d2d9089eb0800000000000000
+      internalID: -4713006208882169839
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 5e97eb03825dee720800000000000000
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      emergency plan transition_104_0: -1462561873313460072
+      emergency plan transition_104_1: 8912497566814982397
+      emergency plan transition_104_10: 1104781780053223825
+      emergency plan transition_104_11: -4566734314221014031
+      emergency plan transition_104_12: -4713006208882169839
+      emergency plan transition_104_2: 2740580148132741533
+      emergency plan transition_104_3: 5509824745534300858
+      emergency plan transition_104_4: -3053645503985358797
+      emergency plan transition_104_5: -8847973134910835721
+      emergency plan transition_104_6: -6275141721796114511
+      emergency plan transition_104_7: 1925329041154318322
+      emergency plan transition_104_8: -164000903196310795
+      emergency plan transition_104_9: 2409874095145388776
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
