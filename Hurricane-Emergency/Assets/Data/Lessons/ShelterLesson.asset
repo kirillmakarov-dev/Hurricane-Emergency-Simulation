@@ -19,6 +19,7 @@ MonoBehaviour:
   objective: Select the shelter actions in order, then press Check to launch the
     scene.
   mode: 6
+  thumbnail: {fileID: 21300000, guid: 6df30ba2ec67c98418fca928f0cc1105, type: 3}
   requiredItems: 1400000015000000
   distractors: 1600000017000000
   openingRuntimeEvents: []

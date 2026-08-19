@@ -98,7 +98,7 @@ public static class MainMenuSceneGenerator
         Text description = FixedText("Lesson objective", root.transform, 14, FontStyle.Normal, DeepTeal, TextAnchor.MiddleLeft, 25f);
         Button open = CreateButton("OPEN LESSON", root.transform, Teal, Color.white, 34f);
         LessonButtonView view = root.AddComponent<LessonButtonView>();
-        view.Configure(number, title, description, open);
+        view.Configure(root.GetComponent<Image>(), number, title, description, open);
         GameObject prefab = PrefabUtility.SaveAsPrefabAsset(root, LessonButtonPrefabPath);
         Object.DestroyImmediate(root);
         return prefab.GetComponent<LessonButtonView>();

@@ -19,6 +19,7 @@ MonoBehaviour:
   objective: Select the cleanup actions in order, then press Check to launch the
     scene.
   mode: 7
+  thumbnail: {fileID: 21300000, guid: c0acf32a03003354c80605554df20b01, type: 3}
   requiredItems: 18000000190000001f000000
   distractors: 1a0000001b0000001c0000001d0000001e000000
   openingRuntimeEvents: []

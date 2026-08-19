@@ -149,18 +149,9 @@ public sealed class GameFlowController : MonoBehaviour
     private void CheckRules()
     {
         if (level == null) return;
-        if (ShouldBypassRuleValidation(level.Mode))
-        {
-            view.RuleFeedbackText.text = "Selected rules will be launched directly in this scene.";
-            view.RuleFeedbackText.color = Success;
-            StartCoroutine(StartGameplayAfterConfirmation());
-            return;
-        }
-
-        RuleValidationResult result = RuleValidator.Validate(selectedRules, level.ExpectedRuleIds);
-        view.RuleFeedbackText.text = result.Message;
-        view.RuleFeedbackText.color = result.IsValid ? Success : Warning;
-        if (result.IsValid) StartCoroutine(StartGameplayAfterConfirmation());
+        view.RuleFeedbackText.text = "Launching your selected rules. You will see the result during play.";
+        view.RuleFeedbackText.color = Success;
+        StartCoroutine(StartGameplayAfterConfirmation());
     }
 
     private IEnumerator StartGameplayAfterConfirmation()
@@ -252,11 +243,7 @@ public sealed class GameFlowController : MonoBehaviour
             if (match == null) return false;
             selectedRules.Add(match);
         }
-        if (ShouldBypassRuleValidation(level.Mode))
-        {
-            return true;
-        }
-        return RuleValidator.Validate(selectedRules, level.ExpectedRuleIds).IsValid;
+        return true;
     }
 
     private void HandleRuntimeStep(RuntimeStepResult result)
@@ -360,7 +347,7 @@ public sealed class GameFlowController : MonoBehaviour
             int lessonNumber = i + 1;
             LevelDefinition lesson = levels[i];
             LessonButtonView lessonView = view.CreateLessonButton();
-            lessonView.Bind(lessonNumber, lesson.Title, lesson.Objective, () => SelectLevel(lesson));
+            lessonView.Bind(lessonNumber, lesson.Title, lesson.Objective, lesson.Thumbnail, () => SelectLevel(lesson));
             generatedLessonViews.Add(lessonView.gameObject);
         }
     }
@@ -429,11 +416,6 @@ public sealed class GameFlowController : MonoBehaviour
         Events.PackToys => "Toy",
         _ => eventType.ToString()
     };
-
-    private static bool ShouldBypassRuleValidation(ModeName mode)
-    {
-        return mode == ModeName.Shelter || mode == ModeName.AfterTheHurricane || mode == ModeName.GardenView;
-    }
 
     private static Color Hex(string value)
     {

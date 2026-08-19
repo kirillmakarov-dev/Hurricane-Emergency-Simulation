@@ -12,8 +12,8 @@ The Unity-native lesson pattern is implemented for `GoBagLesson`, `KitchenLesson
 - Lesson cards, available-rule cards, and selected-rule rows are instantiated only from dedicated prefab templates.
 - `LevelCatalog.asset` references one editable `LevelDefinition` ScriptableObject per lesson.
 - Each lesson selects its ordered required items and distractors through `LessonRuleItem` enum lists in the Inspector.
-- `LessonLaunchContext` transfers the validated rule ids between scenes locally in Unity.
-- `RuleValidator` blocks invalid or misordered selections for the packing lessons; `Shelter`, `AfterTheHurricane`, and `GardenView` launch the selected rules directly when the user presses `Check`.
+- `LessonLaunchContext` transfers the selected rule ids between scenes locally in Unity.
+- `Check` launches the selected rules for every lesson; correctness is reported during play rather than blocking scene start.
 - `SimulationEventChannel` and `LevelSessionController` validate runtime events without replacing existing animations.
 - Result, replay, and return-to-menu paths are connected.
 - WebGL callbacks remain available as compatibility output; they are not the source of truth for this flow.
@@ -41,7 +41,7 @@ Build a Unity-first flow where:
 2. Before the level starts, the player sees the rules and the required steps.
 3. The player assembles or reviews the rules for that level.
 4. The player presses `Check`.
-5. Packing lessons start only after validation passes; `Shelter`, `AfterTheHurricane`, and `GardenView` launch the selected rules directly.
+5. Pressing `Check` starts the lesson with whatever rules the player selected; runtime event checks determine success or failure during the run.
 6. During gameplay, the system validates correct and incorrect events.
 7. The level ends with feedback and progression to the next level or back to menu.
 8. Existing animations, triggers, timers, and scene mechanics continue to work as they do now.
@@ -87,7 +87,7 @@ Build a Unity-first flow where:
 - Show the level title, short description, and the key objective before entering gameplay.
 - If needed, allow returning from a level back to the menu.
 
-### Phase 4: Add the pre-start rule builder / review screen
+### Phase 4: Add the rule builder / review screen
 
 - Show the rules before the level begins.
 - Let the player assemble or confirm the rule sequence for that scene.
@@ -96,8 +96,8 @@ Build a Unity-first flow where:
   - available rule options
   - short explanation of the expected flow
   - `Check` button
-- The `Check` button should validate the assembled rules against the level definition for packing lessons.
-- `Shelter`, `AfterTheHurricane`, and `GardenView` should skip the pre-start gate and launch the selected sequence directly so the scene still shows the chosen actions even when the set is imperfect.
+- The `Check` button should launch the lesson with the assembled rules.
+- The player should see feedback during the run, not only before starting.
 
 ### Phase 5: Add runtime event validation
 
@@ -266,7 +266,7 @@ Owns the rules assembled in the pre-start UI. It supports adding, removing, repl
 
 #### `RuleValidator`
 
-A plain C# service that compares the player's selected rules with the expected rules from `LevelDefinition` and returns a structured result. It should have no dependency on `MonoBehaviour`, scene objects, or UI.
+A plain C# service that can compare the player's selected rules with the expected rules from `LevelDefinition` when needed. The current runtime flow no longer uses it as a gate before starting the lesson, so it should stay independent from `MonoBehaviour`, scene objects, or UI.
 
 Suggested output:
 
@@ -472,7 +472,7 @@ Existing mode classes stay in `Assets/Scripts/Modes/`. Do not move them during t
 ### Sprint 2: Rule builder and pre-start `Check`
 
 - Implement rule cards, selection state, ordering, and removal.
-- Implement the pure C# `RuleValidator`.
+- Implement or keep the pure C# `RuleValidator` as an optional helper, not as a pre-start gate.
 - Show precise missing/unexpected/order feedback.
 - Start the selected mode only after a valid result.
 - Result: one lesson can be configured and launched through Unity UI.
@@ -584,7 +584,7 @@ Keep player-facing feedback short and friendly. Keep technical detail in logs so
 A level is complete only when:
 
 - its briefing and rule cards are authored;
-- invalid pre-start rules are rejected with useful feedback;
+- runtime mistakes are reported with useful feedback during play;
 - valid rules start the correct existing mode;
 - all required existing functions are reachable through the accepted flow;
 - correct, incorrect, out-of-order, and duplicate runtime events behave as configured;

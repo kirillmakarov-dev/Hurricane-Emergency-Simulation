@@ -19,6 +19,7 @@ MonoBehaviour:
   objective: After the hurricane watch, pack clothes, water, a flashlight, and one
     toy in that order.
   mode: 4
+  thumbnail: {fileID: 4579191084824923766, guid: d436a0d4af7ef294ca56d386c93c546d, type: 3}
   requiredItems: 0d0000000e0000000f00000010000000
   distractors: 110000001200000013000000
   openingRuntimeEvents: 0a000000

@@ -13,6 +13,12 @@ public static class LessonDataAssetGenerator
     private const string ShelterPath = LessonFolder + "/ShelterLesson.asset";
     private const string AfterTheHurricanePath = LessonFolder + "/AfterTheHurricaneLesson.asset";
     private const string GardenViewPath = LessonFolder + "/GardenViewLesson.asset";
+    private const string GoBagThumbnailPath = "Assets/GoBag Simulation/Background room.png";
+    private const string KitchenThumbnailPath = "Assets/GoBag Simulation/Kitchen lesson/kitchen.png";
+    private const string BedroomThumbnailPath = "Assets/Sprites/Mission 5/ChildrensRoom/Kelan Bedroom no items.png";
+    private const string ShelterThumbnailPath = "Assets/Shelter/Shelter background.png";
+    private const string AfterTheHurricaneThumbnailPath = "Assets/Mission 8/Background.png";
+    private const string GardenViewThumbnailPath = "Assets/Sprites/outside garden view.jpg";
 
     [MenuItem("Tools/Hurricane/Rebuild Lesson Data Assets")]
     public static void RebuildLessonDataAssets()
@@ -37,6 +43,7 @@ public static class LessonDataAssetGenerator
                 "Kelan's family is preparing for a hurricane. Choose the essential items and arrange the actions before the simulation begins.",
                 "After the parents give a reminder, pack water, a flashlight, and books in that order.",
                 ModeName.GoBagLesson,
+                LoadSprite(GoBagThumbnailPath),
                 new[]
                 {
                     LessonRuleItem.GoBagWater,
@@ -62,6 +69,7 @@ public static class LessonDataAssetGenerator
                 "Kay is checking the kitchen for food and water that can safely travel with the family during a hurricane.",
                 "After the reminder, pack canned food, crackers, and water in that order.",
                 ModeName.KitchenLesson,
+                LoadSprite(KitchenThumbnailPath),
                 new[]
                 {
                     LessonRuleItem.KitchenCannedFood,
@@ -88,6 +96,7 @@ public static class LessonDataAssetGenerator
                 "A hurricane watch has been announced. Kelan needs to choose useful bedroom items before the family leaves.",
                 "After the hurricane watch, pack clothes, water, a flashlight, and one toy in that order.",
                 ModeName.ChildrenRoom,
+                LoadSprite(BedroomThumbnailPath),
                 new[]
                 {
                     LessonRuleItem.BedroomClothes,
@@ -114,6 +123,7 @@ public static class LessonDataAssetGenerator
                 "Kay is staying in shelter while the storm passes. Choose the calm, safe actions that belong in this scene.",
                 "Select the shelter actions in order, then press Check to launch the scene.",
                 ModeName.Shelter,
+                LoadSprite(ShelterThumbnailPath),
                 new[]
                 {
                     LessonRuleItem.ShelterColoursABook,
@@ -137,6 +147,7 @@ public static class LessonDataAssetGenerator
                 "The storm has passed and the family is cleaning up the yard. Choose only the safe cleanup actions.",
                 "Select the cleanup actions in order, then press Check to launch the scene.",
                 ModeName.AfterTheHurricane,
+                LoadSprite(AfterTheHurricaneThumbnailPath),
                 new[]
                 {
                     LessonRuleItem.AfterHurricanePickBranches,
@@ -164,6 +175,7 @@ public static class LessonDataAssetGenerator
                 "The family is outside when the hurricane warning arrives. Choose the safe yard actions before the storm gets close.",
                 "After the warning, take the toys, ball, and bicycle in that order.",
                 ModeName.GardenView,
+                LoadSprite(GardenViewThumbnailPath),
                 new[]
                 {
                     LessonRuleItem.GardenViewTakeToys,
@@ -202,5 +214,10 @@ public static class LessonDataAssetGenerator
     {
         if (!AssetDatabase.IsValidFolder(DataFolder)) AssetDatabase.CreateFolder("Assets", "Data");
         if (!AssetDatabase.IsValidFolder(LessonFolder)) AssetDatabase.CreateFolder(DataFolder, "Lessons");
+    }
+
+    private static Sprite LoadSprite(string path)
+    {
+        return AssetDatabase.LoadAssetAtPath<Sprite>(path);
     }
 }

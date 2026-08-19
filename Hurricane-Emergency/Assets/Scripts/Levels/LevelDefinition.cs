@@ -47,6 +47,7 @@ public sealed class LevelDefinition : ScriptableObject
     [TextArea(2, 5)]
     [SerializeField] private string objective;
     [SerializeField] private ModeName mode;
+    [SerializeField] private Sprite thumbnail;
 
     [Header("Rule Selection")]
     [Tooltip("Correct items in the exact order required to pass Check.")]
@@ -68,6 +69,7 @@ public sealed class LevelDefinition : ScriptableObject
     public string Briefing => briefing;
     public string Objective => objective;
     public ModeName Mode => mode;
+    public Sprite Thumbnail => thumbnail;
     public IReadOnlyList<LessonRuleItem> RequiredItems => requiredItems;
     public IReadOnlyList<LessonRuleItem> Distractors => distractors;
     public IReadOnlyList<RuleDefinition> AvailableRules { get { EnsureRuntimeData(); return availableRules; } }
@@ -150,6 +152,7 @@ public sealed class LevelDefinition : ScriptableObject
         string levelBriefing,
         string levelObjective,
         ModeName targetMode,
+        Sprite levelThumbnail,
         IEnumerable<LessonRuleItem> correctItems,
         IEnumerable<LessonRuleItem> incorrectItems,
         IEnumerable<Events> openingEvents)
@@ -159,6 +162,7 @@ public sealed class LevelDefinition : ScriptableObject
         briefing = levelBriefing;
         objective = levelObjective;
         mode = targetMode;
+        thumbnail = levelThumbnail;
         requiredItems = new List<LessonRuleItem>(correctItems);
         distractors = new List<LessonRuleItem>(incorrectItems);
         openingRuntimeEvents = new List<Events>(openingEvents);

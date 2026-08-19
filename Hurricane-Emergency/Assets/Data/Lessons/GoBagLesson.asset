@@ -19,6 +19,7 @@ MonoBehaviour:
   objective: After the parents give a reminder, pack water, a flashlight, and books
     in that order.
   mode: 8
+  thumbnail: {fileID: 21300000, guid: 75cf928fcebc51748a520b0610c48ca0, type: 3}
   requiredItems: 000000000100000002000000
   distractors: 030000000400000005000000
   openingRuntimeEvents: 1d000000
