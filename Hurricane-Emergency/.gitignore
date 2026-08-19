@@ -1,0 +1,43 @@
+# Unity generated folders
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+
+# Visual Studio / Rider / IDE cache
+.vs/
+.idea/
+.vscode/
+*.csproj
+*.sln
+*.slnx
+*.unityproj
+*.pidb
+*.booproj
+*.svd
+*.user
+*.userprefs
+*.csproj.user
+*.rsuser
+*.VC.db
+*.db
+
+# Unity generated metadata and logs
+sysinfo.txt
+*.log
+*.stackdump
+*_Data/
+*.pidb.meta
+
+# OS junk
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Addressables / build artifacts sometimes produced locally
+*.apk
+*.aab
+*.unitypackage
