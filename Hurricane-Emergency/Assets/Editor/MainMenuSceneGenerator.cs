@@ -90,15 +90,34 @@ public static class MainMenuSceneGenerator
     private static LessonButtonView BuildLessonButtonPrefab()
     {
         GameObject root = CreateImage("LessonButton", Cream);
-        VerticalLayoutGroup layout = AddVertical(root, 4f, 10f);
+        AddLayout(root, 196f, 590f);
+
+        GameObject scrim = CreatePanel("BackgroundScrim", root.transform,
+            new Color(Ink.r, Ink.g, Ink.b, 0.72f), Vector2.zero, Vector2.one);
+        scrim.GetComponent<Image>().raycastTarget = false;
+
+        GameObject content = new("CardContent", typeof(RectTransform));
+        content.transform.SetParent(root.transform, false);
+        RectTransform contentRect = content.GetComponent<RectTransform>();
+        contentRect.anchorMin = Vector2.zero;
+        contentRect.anchorMax = Vector2.one;
+        contentRect.offsetMin = new Vector2(20f, 16f);
+        contentRect.offsetMax = new Vector2(-20f, -16f);
+        VerticalLayoutGroup layout = AddVertical(content, 5f, 0f);
         layout.childAlignment = TextAnchor.MiddleLeft;
-        AddLayout(root, 168f);
-        Text number = FixedText("LESSON 01", root.transform, 12, FontStyle.Bold, Coral, TextAnchor.MiddleLeft, 16f);
-        Text title = FixedText("Lesson title", root.transform, 20, FontStyle.Bold, Ink, TextAnchor.MiddleLeft, 22f);
-        Text description = FixedText("Lesson objective", root.transform, 14, FontStyle.Normal, DeepTeal, TextAnchor.MiddleLeft, 48f);
-        Button open = CreateButton("OPEN LESSON", root.transform, Teal, Color.white, 40f);
+
+        Text number = FixedText("LESSON 01", content.transform, 12, FontStyle.Bold, Aqua, TextAnchor.MiddleLeft, 16f);
+        Text title = FixedText("Lesson title", content.transform, 22, FontStyle.Bold, Color.white, TextAnchor.MiddleLeft, 30f);
+        Text description = FixedText("Lesson objective", content.transform, 14, FontStyle.Normal, Cream, TextAnchor.UpperLeft, 48f);
+        GameObject actionRow = CreateHorizontalGroup("CardAction", content.transform, 0f);
+        AddLayout(actionRow, 44f);
+        Button open = CreateButton("OPEN LESSON", actionRow.transform, Teal, Color.white, 44f, 180f);
+        GameObject spacer = new("Spacer", typeof(RectTransform));
+        spacer.transform.SetParent(actionRow.transform, false);
+        AddFlexible(spacer, 1f);
+
         LessonButtonView view = root.AddComponent<LessonButtonView>();
-        view.Configure(root.GetComponent<Image>(), number, title, description, open);
+        view.Configure(root.GetComponent<Image>(), null, number, title, description, open);
         GameObject prefab = PrefabUtility.SaveAsPrefabAsset(root, LessonButtonPrefabPath);
         Object.DestroyImmediate(root);
         return prefab.GetComponent<LessonButtonView>();
@@ -144,18 +163,53 @@ public static class MainMenuSceneGenerator
         viewportRect.anchorMin = Vector2.zero;
         viewportRect.anchorMax = Vector2.one;
         viewportRect.offsetMin = Vector2.zero;
-        viewportRect.offsetMax = Vector2.zero;
+        viewportRect.offsetMax = new Vector2(-30f, 0f);
 
-        GameObject lessonContainer = CreateVerticalGroup("LessonButtons", viewport.transform, 12f);
-        VerticalLayoutGroup lessonLayout = lessonContainer.GetComponent<VerticalLayoutGroup>();
+        GameObject lessonContainer = new("LessonButtons", typeof(RectTransform), typeof(GridLayoutGroup));
+        lessonContainer.transform.SetParent(viewport.transform, false);
+        RectTransform lessonContainerRect = lessonContainer.GetComponent<RectTransform>();
+        lessonContainerRect.anchorMin = new Vector2(0f, 1f);
+        lessonContainerRect.anchorMax = new Vector2(1f, 1f);
+        lessonContainerRect.pivot = new Vector2(0.5f, 1f);
+        lessonContainerRect.anchoredPosition = Vector2.zero;
+        lessonContainerRect.sizeDelta = Vector2.zero;
+        GridLayoutGroup lessonLayout = lessonContainer.GetComponent<GridLayoutGroup>();
+        lessonLayout.padding = new RectOffset(8, 8, 8, 8);
+        lessonLayout.cellSize = new Vector2(590f, 196f);
+        lessonLayout.spacing = new Vector2(16f, 16f);
+        lessonLayout.startCorner = GridLayoutGroup.Corner.UpperLeft;
+        lessonLayout.startAxis = GridLayoutGroup.Axis.Horizontal;
         lessonLayout.childAlignment = TextAnchor.UpperCenter;
-        lessonLayout.childForceExpandHeight = false;
-        lessonLayout.childForceExpandWidth = true;
+        lessonLayout.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+        lessonLayout.constraintCount = 2;
         ContentSizeFitter lessonFitter = lessonContainer.AddComponent<ContentSizeFitter>();
         lessonFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
         lessonFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+
+        GameObject scrollbarObject = CreateImage("VerticalScrollbar", new Color(DeepTeal.r, DeepTeal.g, DeepTeal.b, 0.2f));
+        scrollbarObject.transform.SetParent(lessonScrollArea.transform, false);
+        RectTransform scrollbarRect = scrollbarObject.GetComponent<RectTransform>();
+        scrollbarRect.anchorMin = new Vector2(1f, 0f);
+        scrollbarRect.anchorMax = Vector2.one;
+        scrollbarRect.pivot = new Vector2(1f, 1f);
+        scrollbarRect.anchoredPosition = Vector2.zero;
+        scrollbarRect.sizeDelta = new Vector2(20f, 0f);
+        Scrollbar scrollbar = scrollbarObject.AddComponent<Scrollbar>();
+        GameObject slidingArea = new("SlidingArea", typeof(RectTransform));
+        slidingArea.transform.SetParent(scrollbarObject.transform, false);
+        Stretch(slidingArea.GetComponent<RectTransform>(), 3f);
+        GameObject handle = CreateImage("Handle", Teal);
+        handle.transform.SetParent(slidingArea.transform, false);
+        Stretch(handle.GetComponent<RectTransform>(), 0f);
+        scrollbar.handleRect = handle.GetComponent<RectTransform>();
+        scrollbar.targetGraphic = handle.GetComponent<Image>();
+        scrollbar.direction = Scrollbar.Direction.BottomToTop;
+        scrollbar.size = 0.35f;
+
         lessonScrollRect.viewport = viewportRect;
         lessonScrollRect.content = lessonContainer.GetComponent<RectTransform>();
+        lessonScrollRect.verticalScrollbar = scrollbar;
+        lessonScrollRect.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.AutoHide;
 
         GameObject briefing = CreateScreen("BriefingScreen", root.transform, DeepTeal);
         GameObject briefingContent = CreateContent(briefing.transform, Paper);

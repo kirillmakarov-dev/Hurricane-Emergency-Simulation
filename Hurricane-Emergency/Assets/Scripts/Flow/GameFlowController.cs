@@ -347,7 +347,7 @@ public sealed class GameFlowController : MonoBehaviour
             int lessonNumber = i + 1;
             LevelDefinition lesson = levels[i];
             LessonButtonView lessonView = view.CreateLessonButton();
-            lessonView.Bind(lessonNumber, lesson.Title, lesson.Objective, lesson.Thumbnail, () => SelectLevel(lesson));
+            lessonView.Bind(lessonNumber, lesson.CardTitle, lesson.CardDescription, lesson.CardBackground, () => SelectLevel(lesson));
             generatedLessonViews.Add(lessonView.gameObject);
         }
     }

@@ -41,12 +41,19 @@ public sealed class LevelDefinition : ScriptableObject
 {
     [Header("Lesson")]
     [SerializeField] private string levelId;
+    [InspectorName("Card Title")]
+    [Tooltip("Lesson name shown on its card in the main menu.")]
     [SerializeField] private string title;
+    [InspectorName("Briefing Text")]
     [TextArea(2, 5)]
     [SerializeField] private string briefing;
+    [InspectorName("Card Description / Objective")]
+    [Tooltip("Short description shown on the lesson card and reused as the level objective.")]
     [TextArea(2, 5)]
     [SerializeField] private string objective;
     [SerializeField] private ModeName mode;
+    [InspectorName("Card Background")]
+    [Tooltip("Background image assigned to this lesson card in the main menu.")]
     [SerializeField] private Sprite thumbnail;
 
     [Header("Rule Selection")]
@@ -70,6 +77,9 @@ public sealed class LevelDefinition : ScriptableObject
     public string Objective => objective;
     public ModeName Mode => mode;
     public Sprite Thumbnail => thumbnail;
+    public string CardTitle => title;
+    public string CardDescription => objective;
+    public Sprite CardBackground => thumbnail;
     public IReadOnlyList<LessonRuleItem> RequiredItems => requiredItems;
     public IReadOnlyList<LessonRuleItem> Distractors => distractors;
     public IReadOnlyList<RuleDefinition> AvailableRules { get { EnsureRuntimeData(); return availableRules; } }

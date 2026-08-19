@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: LevelCatalog
   m_EditorClassIdentifier: Assembly-CSharp::LevelCatalog
   levels:
+  - {fileID: 11400000, guid: 8b7ce59c8f5144f9bbf8e0f0a4d38d22, type: 2}
+  - {fileID: 11400000, guid: 6d2db8c6f7a44f3cb2d0d8b4b7d4b1a1, type: 2}
+  - {fileID: 11400000, guid: 8f5d0a7c3b814c1b9e3f2a6d4c5b7e90, type: 2}
   - {fileID: 11400000, guid: ca2fa51ded4385c45a2eb3964321a94c, type: 2}
   - {fileID: 11400000, guid: 1200c7404c6af9f4696e6ab6f2d080e1, type: 2}
   - {fileID: 11400000, guid: 49a601e666f2b48478dea4e1f08e267f, type: 2}
   - {fileID: 11400000, guid: d41b9d882f5c4a1ebf5b6e2c113c9a77, type: 2}
-  - {fileID: 11400000, guid: 6d2db8c6f7a44f3cb2d0d8b4b7d4b1a1, type: 2}
-  - {fileID: 11400000, guid: 8f5d0a7c3b814c1b9e3f2a6d4c5b7e90, type: 2}
-  - {fileID: 11400000, guid: 8b7ce59c8f5144f9bbf8e0f0a4d38d22, type: 2}
