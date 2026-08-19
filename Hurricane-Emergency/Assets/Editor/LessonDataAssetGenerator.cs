@@ -13,12 +13,14 @@ public static class LessonDataAssetGenerator
     private const string ShelterPath = LessonFolder + "/ShelterLesson.asset";
     private const string AfterTheHurricanePath = LessonFolder + "/AfterTheHurricaneLesson.asset";
     private const string GardenViewPath = LessonFolder + "/GardenViewLesson.asset";
+    private const string BathroomPath = LessonFolder + "/BathroomLesson.asset";
     private const string GoBagThumbnailPath = "Assets/GoBag Simulation/Background room.png";
     private const string KitchenThumbnailPath = "Assets/GoBag Simulation/Kitchen lesson/kitchen.png";
     private const string BedroomThumbnailPath = "Assets/Sprites/Mission 5/ChildrensRoom/Kelan Bedroom no items.png";
     private const string ShelterThumbnailPath = "Assets/Shelter/Shelter background.png";
     private const string AfterTheHurricaneThumbnailPath = "Assets/Mission 8/Background.png";
     private const string GardenViewThumbnailPath = "Assets/Sprites/outside garden view.jpg";
+    private const string BathroomThumbnailPath = "Assets/GoBag Simulation/BathRoom/Bathroom.png";
 
     [MenuItem("Tools/Hurricane/Rebuild Lesson Data Assets")]
     public static void RebuildLessonDataAssets()
@@ -27,7 +29,7 @@ public static class LessonDataAssetGenerator
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
         Selection.activeObject = AssetDatabase.LoadAssetAtPath<LevelCatalog>(CatalogPath);
-        Debug.Log("Lesson ScriptableObject assets rebuilt for Go Bag, Kitchen, Bedroom, Shelter, After the Hurricane, and Garden View.");
+        Debug.Log("Lesson ScriptableObject assets rebuilt for Go Bag, Kitchen, Bedroom, Bathroom, Shelter, After the Hurricane, and Garden View.");
     }
 
     public static LevelCatalog EnsureLessonDataAssets(bool overwriteExisting = false)
@@ -191,10 +193,38 @@ public static class LessonDataAssetGenerator
             EditorUtility.SetDirty(gardenView);
         }
 
-        LevelCatalog catalog = LoadOrCreate<LevelCatalog>(CatalogPath);
-        if (overwriteExisting || catalog.Levels.Count != 6)
+        LevelDefinition bathroom = LoadOrCreate<LevelDefinition>(BathroomPath);
+        if (overwriteExisting || string.IsNullOrEmpty(bathroom.LevelId))
         {
-            catalog.ConfigureEditor(new[] { goBag, kitchen, bedroom, shelter, afterTheHurricane, gardenView });
+            bathroom.ConfigureEditor(
+                "bathroom-lesson",
+                "Bathroom supplies",
+                "Kelan is preparing the bathroom emergency kit before the family leaves for shelter.",
+                "After the reminder, pack the first aid kit, toothbrush, wipes, and soap in that order.",
+                ModeName.BathRoomLesson,
+                LoadSprite(BathroomThumbnailPath),
+                new[]
+                {
+                    LessonRuleItem.BathroomFirstAidKit,
+                    LessonRuleItem.BathroomToothbrush,
+                    LessonRuleItem.BathroomWipes,
+                    LessonRuleItem.BathroomSoap
+                },
+                new[]
+                {
+                    LessonRuleItem.BathroomHairDryer,
+                    LessonRuleItem.BathroomPump,
+                    LessonRuleItem.BathroomWashingGel,
+                    LessonRuleItem.BathroomCleaningSpray
+                },
+                new[] { Events.GobagReminder });
+            EditorUtility.SetDirty(bathroom);
+        }
+
+        LevelCatalog catalog = LoadOrCreate<LevelCatalog>(CatalogPath);
+        if (overwriteExisting || catalog.Levels.Count != 7)
+        {
+            catalog.ConfigureEditor(new[] { goBag, kitchen, bedroom, bathroom, shelter, afterTheHurricane, gardenView });
             EditorUtility.SetDirty(catalog);
         }
         return catalog;

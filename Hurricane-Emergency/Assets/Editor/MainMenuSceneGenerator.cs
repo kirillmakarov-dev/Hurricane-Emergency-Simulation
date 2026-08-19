@@ -29,7 +29,7 @@ public static class MainMenuSceneGenerator
     [MenuItem("Tools/Hurricane/Rebuild Game Flow UI Assets")]
     public static void RebuildGameFlowUiAssets()
     {
-        if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+        if (!Application.isBatchMode && !EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
 
         EnsurePrefabFolder();
         LevelCatalog levelCatalog = LessonDataAssetGenerator.EnsureLessonDataAssets();
@@ -90,13 +90,13 @@ public static class MainMenuSceneGenerator
     private static LessonButtonView BuildLessonButtonPrefab()
     {
         GameObject root = CreateImage("LessonButton", Cream);
-        VerticalLayoutGroup layout = AddVertical(root, 3f, 8f);
+        VerticalLayoutGroup layout = AddVertical(root, 4f, 10f);
         layout.childAlignment = TextAnchor.MiddleLeft;
-        AddLayout(root, 145f);
+        AddLayout(root, 168f);
         Text number = FixedText("LESSON 01", root.transform, 12, FontStyle.Bold, Coral, TextAnchor.MiddleLeft, 16f);
-        Text title = FixedText("Lesson title", root.transform, 21, FontStyle.Bold, Ink, TextAnchor.MiddleLeft, 24f);
-        Text description = FixedText("Lesson objective", root.transform, 14, FontStyle.Normal, DeepTeal, TextAnchor.MiddleLeft, 25f);
-        Button open = CreateButton("OPEN LESSON", root.transform, Teal, Color.white, 34f);
+        Text title = FixedText("Lesson title", root.transform, 20, FontStyle.Bold, Ink, TextAnchor.MiddleLeft, 22f);
+        Text description = FixedText("Lesson objective", root.transform, 14, FontStyle.Normal, DeepTeal, TextAnchor.MiddleLeft, 48f);
+        Button open = CreateButton("OPEN LESSON", root.transform, Teal, Color.white, 40f);
         LessonButtonView view = root.AddComponent<LessonButtonView>();
         view.Configure(root.GetComponent<Image>(), number, title, description, open);
         GameObject prefab = PrefabUtility.SaveAsPrefabAsset(root, LessonButtonPrefabPath);
@@ -125,8 +125,37 @@ public static class MainMenuSceneGenerator
         FixedText("HURRICANE READY  /  UNITY", mainContent.transform, 17, FontStyle.Bold, Teal, TextAnchor.MiddleLeft, 30f);
         FixedText("Choose a lesson", mainContent.transform, 52, FontStyle.Bold, Ink, TextAnchor.MiddleLeft, 72f);
         FixedText("Learn emergency preparation by building rules, then watch the simulation follow your plan.", mainContent.transform, 22, FontStyle.Normal, DeepTeal, TextAnchor.MiddleLeft, 72f);
-        GameObject lessonContainer = CreateVerticalGroup("LessonButtons", mainContent.transform, 10f);
-        AddFlexible(lessonContainer, 1f);
+        GameObject lessonScrollArea = CreateImage("LessonScrollArea", Paper);
+        lessonScrollArea.transform.SetParent(mainContent.transform, false);
+        AddFlexible(lessonScrollArea, 1f);
+        ScrollRect lessonScrollRect = lessonScrollArea.AddComponent<ScrollRect>();
+        lessonScrollRect.horizontal = false;
+        lessonScrollRect.vertical = true;
+        lessonScrollRect.movementType = ScrollRect.MovementType.Elastic;
+        lessonScrollRect.scrollSensitivity = 30f;
+        Image lessonScrollImage = lessonScrollArea.GetComponent<Image>();
+        lessonScrollImage.color = new Color(Paper.r, Paper.g, Paper.b, 0.75f);
+
+        GameObject viewport = CreateImage("Viewport", Color.white);
+        viewport.transform.SetParent(lessonScrollArea.transform, false);
+        Mask viewportMask = viewport.AddComponent<Mask>();
+        viewportMask.showMaskGraphic = false;
+        RectTransform viewportRect = viewport.GetComponent<RectTransform>();
+        viewportRect.anchorMin = Vector2.zero;
+        viewportRect.anchorMax = Vector2.one;
+        viewportRect.offsetMin = Vector2.zero;
+        viewportRect.offsetMax = Vector2.zero;
+
+        GameObject lessonContainer = CreateVerticalGroup("LessonButtons", viewport.transform, 12f);
+        VerticalLayoutGroup lessonLayout = lessonContainer.GetComponent<VerticalLayoutGroup>();
+        lessonLayout.childAlignment = TextAnchor.UpperCenter;
+        lessonLayout.childForceExpandHeight = false;
+        lessonLayout.childForceExpandWidth = true;
+        ContentSizeFitter lessonFitter = lessonContainer.AddComponent<ContentSizeFitter>();
+        lessonFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        lessonFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+        lessonScrollRect.viewport = viewportRect;
+        lessonScrollRect.content = lessonContainer.GetComponent<RectTransform>();
 
         GameObject briefing = CreateScreen("BriefingScreen", root.transform, DeepTeal);
         GameObject briefingContent = CreateContent(briefing.transform, Paper);
@@ -242,10 +271,9 @@ public static class MainMenuSceneGenerator
             SceneManager.MoveGameObjectToScene(controller.gameObject, scene);
         }
 
-        GameFlowView[] existingViews = Object.FindObjectsByType<GameFlowView>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-        foreach (GameFlowView existingView in existingViews) Object.DestroyImmediate(existingView.gameObject);
-        Transform oldCanvas = controller.transform.Find("UnityNativeLessonFlow");
-        if (oldCanvas != null) Object.DestroyImmediate(oldCanvas.gameObject);
+        Transform existingUi = controller.transform.Find("GameFlowUI");
+        if (existingUi == null) existingUi = controller.transform.Find("UnityNativeLessonFlow");
+        if (existingUi != null) Object.DestroyImmediate(existingUi.gameObject);
 
         GameObject uiPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(UiPrefabPath);
         GameObject instance = (GameObject)PrefabUtility.InstantiatePrefab(uiPrefab, scene);

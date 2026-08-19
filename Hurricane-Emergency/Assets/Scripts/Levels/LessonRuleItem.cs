@@ -44,7 +44,16 @@ public enum LessonRuleItem
     [InspectorName("Garden View / Take ball")] GardenViewTakeBall = 34,
     [InspectorName("Garden View / Take bicycle")] GardenViewTakeBicycle = 35,
     [InspectorName("Garden View / Go for a walk")] GardenViewGoForWalk = 36,
-    [InspectorName("Garden View / Pick flowers")] GardenViewPickFlowers = 37
+    [InspectorName("Garden View / Pick flowers")] GardenViewPickFlowers = 37,
+
+    [InspectorName("Bathroom / First aid kit")] BathroomFirstAidKit = 38,
+    [InspectorName("Bathroom / Toothbrush")] BathroomToothbrush = 39,
+    [InspectorName("Bathroom / Wipes")] BathroomWipes = 40,
+    [InspectorName("Bathroom / Soap")] BathroomSoap = 41,
+    [InspectorName("Bathroom / Hair dryer")] BathroomHairDryer = 42,
+    [InspectorName("Bathroom / Pump")] BathroomPump = 43,
+    [InspectorName("Bathroom / Washing gel")] BathroomWashingGel = 44,
+    [InspectorName("Bathroom / Cleaning spray")] BathroomCleaningSpray = 45
 }
 
 public readonly struct LessonRuleDescriptor
@@ -213,6 +222,31 @@ public static class LessonRuleItemCatalog
             LessonRuleItem.GardenViewPickFlowers => Create(
                 "garden-view-pick-flowers", "Pick flowers", "Pick flowers is not part of the safety lesson.",
                 Animations.keyPickFlowers, Events.Empty, ModeName.GardenView),
+
+            LessonRuleItem.BathroomFirstAidKit => Create(
+                "bathroom-first-aid-kit", "Pack first aid kit", "Add first aid supplies for small injuries and emergencies.",
+                BathRoomLesson.BathRoomAnimations.PackFirstAid, Events.PackFirstAid, ModeName.BathRoomLesson),
+            LessonRuleItem.BathroomToothbrush => Create(
+                "bathroom-toothbrush", "Pack toothbrush", "A toothbrush belongs in the bathroom emergency kit.",
+                BathRoomLesson.BathRoomAnimations.PackToothbrush, Events.PackToothbrush, ModeName.BathRoomLesson),
+            LessonRuleItem.BathroomWipes => Create(
+                "bathroom-wipes", "Pack wipes", "Pack wipes so the family can stay clean while away from home.",
+                BathRoomLesson.BathRoomAnimations.PackWipes, Events.PackWipes, ModeName.BathRoomLesson),
+            LessonRuleItem.BathroomSoap => Create(
+                "bathroom-soap", "Pack soap", "Soap helps the family stay clean and healthy.",
+                BathRoomLesson.BathRoomAnimations.PackSoap, Events.PackSoap, ModeName.BathRoomLesson),
+            LessonRuleItem.BathroomHairDryer => Create(
+                "bathroom-hair-dryer", "Pack hair dryer", "This is not required for the bathroom lesson.",
+                BathRoomLesson.BathRoomAnimations.PuckHairDryer, Events.Empty, ModeName.BathRoomLesson),
+            LessonRuleItem.BathroomPump => Create(
+                "bathroom-pump", "Pack pump", "This is not required for the bathroom lesson.",
+                BathRoomLesson.BathRoomAnimations.PackPump, Events.Empty, ModeName.BathRoomLesson),
+            LessonRuleItem.BathroomWashingGel => Create(
+                "bathroom-washing-gel", "Pack washing gel", "This is not required for the bathroom lesson.",
+                BathRoomLesson.BathRoomAnimations.PackWashingGel, Events.Empty, ModeName.BathRoomLesson),
+            LessonRuleItem.BathroomCleaningSpray => Create(
+                "bathroom-cleaning-spray", "Pack cleaning spray", "This is not required for the bathroom lesson.",
+                BathRoomLesson.BathRoomAnimations.PackCleaningSpray, Events.Empty, ModeName.BathRoomLesson),
             _ => default
         };
 
