@@ -4,19 +4,31 @@ _Purpose: a step-by-step implementation guide for moving the current WebGL-drive
 
 ## Implementation Status
 
-The first technical vertical slice is implemented for `GoBagLesson`:
+The Unity-native lesson pattern is implemented for `GoBagLesson`, `KitchenLesson`, and the player-facing Bedroom lesson backed by `ChildrenRoomMode`:
 
 - `MainMenu.unity` is build scene 0 and owns lesson selection, briefing, and rule assembly.
 - `SampleScene.unity` is build scene 1 and owns the existing simulation content.
 - Both scenes contain a serialized `GameFlowUI.prefab` instance; runtime code does not construct the interface.
-- Available-rule cards and selected-rule rows are instantiated only from dedicated prefab templates.
+- Lesson cards, available-rule cards, and selected-rule rows are instantiated only from dedicated prefab templates.
+- `LevelCatalog.asset` references one editable `LevelDefinition` ScriptableObject per lesson.
+- Each lesson selects its ordered required items and distractors through `LessonRuleItem` enum lists in the Inspector.
 - `LessonLaunchContext` transfers the validated rule ids between scenes locally in Unity.
 - `RuleValidator` blocks invalid or misordered selections before gameplay.
 - `SimulationEventChannel` and `LevelSessionController` validate runtime events without replacing existing animations.
 - Result, replay, and return-to-menu paths are connected.
 - WebGL callbacks remain available as compatibility output; they are not the source of truth for this flow.
 
-The remaining phases apply this pattern to additional lessons and then extract repeated code into helpers.
+Current lesson contracts:
+
+| Lesson | Existing mode | Accepted rule order | Runtime event order |
+| --- | --- | --- | --- |
+| Go Bag | `GoBagLesson` | water, flashlight, books | `GobagReminder`, `PackWater`, `PackFlashlight`, `PackBook` |
+| Kitchen | `KitchenLesson` | canned food, crackers, water | `GobagReminder`, `PackCannedFood`, `PackCrackers`, `PackWater` |
+| Bedroom | `ChildrenRoomMode` / `ModeName.ChildrenRoom` | clothes, water, flashlight, toy | `HurricaneWatch`, `PackClothes`, `PackWater`, `PackFlashlight`, `PackToys` |
+
+Each adapter starts the already existing animation queue and functions for its mode. It does not replace Animator controllers, clips, triggers, object swaps, movement, or timing.
+
+The remaining phases apply this pattern to additional lessons and then extract repeated queue, mapping, and UI coordination code into helpers only after behavior is accepted.
 
 ## Goal
 
@@ -168,18 +180,30 @@ Create the following components only as they become necessary. Their first versi
 
 #### `LevelDefinition`
 
-A `ScriptableObject` containing authored data for one lesson:
+A `ScriptableObject` containing authored data for one lesson. This is implemented for Go Bag, Kitchen, and Bedroom:
 
 - stable `levelId`
 - display title and description
 - learning objective and pre-level instructions
 - target `ModeName`
-- available rule cards
-- expected rule arrangement
-- required runtime steps
-- optional incorrect actions
+- ordered `Required Items` selected from `LessonRuleItem` enum
+- separate `Distractors` selected from the same enum
+- opening runtime events such as `GobagReminder` or `HurricaneWatch`
 - next level id
 - completion behavior: next level or menu
+
+At runtime, `LevelDefinition` derives available rule cards, stable expected rule ids, animation commands, and required completion events from the enum selections. These derived values are not duplicated in the asset.
+
+#### `LessonRuleItem`
+
+A shared Inspector enum for authored lesson choices. Each value is mapped once by `LessonRuleItemCatalog` to:
+
+- the existing mode that owns it
+- stable rule id and player-facing label
+- the existing animation enum command
+- the existing completion `Events` value
+
+The current enum contains every selectable item for Go Bag, Kitchen, and Bedroom. Add the items for a new lesson before creating that lesson's `LevelDefinition` asset.
 
 #### `RuleDefinition`
 
@@ -196,7 +220,7 @@ Do not use visible UI text as an identifier. Text can change during localization
 
 #### `LevelCatalog`
 
-A `ScriptableObject` containing the ordered list of available `LevelDefinition` assets. It is the source for the main menu and next-level navigation.
+A `ScriptableObject` containing the ordered list of available `LevelDefinition` assets. `Assets/Data/Lessons/LevelCatalog.asset` is serialized into `GameFlowController` in both runtime scenes and is the source for the main menu and gameplay lookup.
 
 ### Flow and state
 
@@ -299,7 +323,7 @@ The evaluator observes completed actions. It does not invoke mode functions and 
 
 #### UI authoring rule
 
-`GameFlowUI.prefab` is the editable source of truth for permanent screens. It is instantiated and serialized in `MainMenu.unity` and `SampleScene.unity`. `RuleOptionButton.prefab` and `SelectedRuleRow.prefab` are the only dynamic UI templates in the first vertical slice. Runtime scripts may bind data and callbacks or instantiate these templates, but they may not assemble UI components or layout hierarchies in code.
+`GameFlowUI.prefab` is the editable source of truth for permanent screens. It is instantiated and serialized in `MainMenu.unity` and `SampleScene.unity`. `LessonButton.prefab`, `RuleOptionButton.prefab`, and `SelectedRuleRow.prefab` are the only dynamic UI templates in the current flow. Runtime scripts may bind data and callbacks or instantiate these templates, but they may not assemble UI components or layout hierarchies in code.
 
 This keeps the flow visually editable without changing gameplay code and preserves a clear boundary between presentation and orchestration.
 
@@ -491,7 +515,7 @@ Existing mode classes stay in `Assets/Scripts/Modes/`. Do not move them during t
 
 - `MainMenu.unity` and `SampleScene.unity` each contain one configured `GameFlowController` with a serialized `GameFlowView` reference.
 - Both scenes contain a `GameFlowUI.prefab` instance rather than runtime-generated screens.
-- `RuleOptionButton.prefab` and `SelectedRuleRow.prefab` have all labels and buttons assigned in their view components.
+- `LessonButton.prefab`, `RuleOptionButton.prefab`, and `SelectedRuleRow.prefab` have all labels and buttons assigned in their view components.
 - Runtime Flow scripts contain no `new GameObject` or `AddComponent` UI construction.
 - Gameplay UI roots are separate from mode-specific scene roots.
 - `LevelCatalog` contains unique level ids in intended progression order.

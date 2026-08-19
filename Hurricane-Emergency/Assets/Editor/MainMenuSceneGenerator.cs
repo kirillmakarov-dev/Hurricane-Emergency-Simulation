@@ -14,6 +14,7 @@ public static class MainMenuSceneGenerator
     private const string UiPrefabPath = PrefabFolder + "/GameFlowUI.prefab";
     private const string RuleOptionPrefabPath = PrefabFolder + "/RuleOptionButton.prefab";
     private const string SelectedRulePrefabPath = PrefabFolder + "/SelectedRuleRow.prefab";
+    private const string LessonButtonPrefabPath = PrefabFolder + "/LessonButton.prefab";
 
     private static readonly Color Ink = Hex("17252D");
     private static readonly Color DeepTeal = Hex("184E57");
@@ -31,13 +32,15 @@ public static class MainMenuSceneGenerator
         if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
 
         EnsurePrefabFolder();
+        LevelCatalog levelCatalog = LessonDataAssetGenerator.EnsureLessonDataAssets();
         font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         RuleOptionView optionPrefab = BuildRuleOptionPrefab();
         SelectedRuleRowView selectedPrefab = BuildSelectedRulePrefab();
-        BuildGameFlowUiPrefab(optionPrefab, selectedPrefab);
+        LessonButtonView lessonPrefab = BuildLessonButtonPrefab();
+        BuildGameFlowUiPrefab(optionPrefab, selectedPrefab, lessonPrefab);
 
-        WireScene(MenuScenePath, true);
-        WireScene(GameplayScenePath, false);
+        WireScene(MenuScenePath, true, levelCatalog);
+        WireScene(GameplayScenePath, false, levelCatalog);
         UpdateBuildSettings();
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
@@ -84,7 +87,27 @@ public static class MainMenuSceneGenerator
         return prefab.GetComponent<SelectedRuleRowView>();
     }
 
-    private static GameFlowView BuildGameFlowUiPrefab(RuleOptionView optionPrefab, SelectedRuleRowView selectedPrefab)
+    private static LessonButtonView BuildLessonButtonPrefab()
+    {
+        GameObject root = CreateImage("LessonButton", Cream);
+        VerticalLayoutGroup layout = AddVertical(root, 3f, 8f);
+        layout.childAlignment = TextAnchor.MiddleLeft;
+        AddLayout(root, 145f);
+        Text number = FixedText("LESSON 01", root.transform, 12, FontStyle.Bold, Coral, TextAnchor.MiddleLeft, 16f);
+        Text title = FixedText("Lesson title", root.transform, 21, FontStyle.Bold, Ink, TextAnchor.MiddleLeft, 24f);
+        Text description = FixedText("Lesson objective", root.transform, 14, FontStyle.Normal, DeepTeal, TextAnchor.MiddleLeft, 25f);
+        Button open = CreateButton("OPEN LESSON", root.transform, Teal, Color.white, 34f);
+        LessonButtonView view = root.AddComponent<LessonButtonView>();
+        view.Configure(number, title, description, open);
+        GameObject prefab = PrefabUtility.SaveAsPrefabAsset(root, LessonButtonPrefabPath);
+        Object.DestroyImmediate(root);
+        return prefab.GetComponent<LessonButtonView>();
+    }
+
+    private static GameFlowView BuildGameFlowUiPrefab(
+        RuleOptionView optionPrefab,
+        SelectedRuleRowView selectedPrefab,
+        LessonButtonView lessonPrefab)
     {
         GameObject root = new("GameFlowUI", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster), typeof(GameFlowView));
         Canvas canvas = root.GetComponent<Canvas>();
@@ -102,27 +125,20 @@ public static class MainMenuSceneGenerator
         FixedText("HURRICANE READY  /  UNITY", mainContent.transform, 17, FontStyle.Bold, Teal, TextAnchor.MiddleLeft, 30f);
         FixedText("Choose a lesson", mainContent.transform, 52, FontStyle.Bold, Ink, TextAnchor.MiddleLeft, 72f);
         FixedText("Learn emergency preparation by building rules, then watch the simulation follow your plan.", mainContent.transform, 22, FontStyle.Normal, DeepTeal, TextAnchor.MiddleLeft, 72f);
-        GameObject lessonCard = CreateImage("GoBagLessonCard", Cream);
-        lessonCard.transform.SetParent(mainContent.transform, false);
-        VerticalLayoutGroup lessonLayout = AddVertical(lessonCard, 12f, 24f);
-        lessonLayout.childAlignment = TextAnchor.MiddleLeft;
-        AddLayout(lessonCard, 250f);
-        FixedText("LESSON 01", lessonCard.transform, 15, FontStyle.Bold, Coral, TextAnchor.MiddleLeft, 28f);
-        FixedText("Build a hurricane go bag", lessonCard.transform, 30, FontStyle.Bold, Ink, TextAnchor.MiddleLeft, 46f);
-        FixedText("Select the essential actions in the correct order.", lessonCard.transform, 18, FontStyle.Normal, DeepTeal, TextAnchor.MiddleLeft, 38f);
-        Button openLesson = CreateButton("OPEN LESSON", lessonCard.transform, Teal, Color.white, 62f);
+        GameObject lessonContainer = CreateVerticalGroup("LessonButtons", mainContent.transform, 10f);
+        AddFlexible(lessonContainer, 1f);
 
         GameObject briefing = CreateScreen("BriefingScreen", root.transform, DeepTeal);
         GameObject briefingContent = CreateContent(briefing.transform, Paper);
         VerticalLayoutGroup briefingLayout = AddVertical(briefingContent, 18f, 40f);
         briefingLayout.childAlignment = TextAnchor.MiddleLeft;
         FixedText("LESSON BRIEFING", briefingContent.transform, 17, FontStyle.Bold, Coral, TextAnchor.MiddleLeft, 30f);
-        FixedText("Prepare the family go bag", briefingContent.transform, 46, FontStyle.Bold, Ink, TextAnchor.MiddleLeft, 66f);
-        FixedText("A hurricane is approaching. Build a rule sequence that reminds the family and packs water, a flashlight, and books in that order.", briefingContent.transform, 23, FontStyle.Normal, DeepTeal, TextAnchor.MiddleLeft, 140f);
+        Text briefingTitle = FixedText("Lesson title", briefingContent.transform, 46, FontStyle.Bold, Ink, TextAnchor.MiddleLeft, 66f);
+        Text briefingBody = FixedText("Lesson briefing", briefingContent.transform, 23, FontStyle.Normal, DeepTeal, TextAnchor.MiddleLeft, 140f);
         GameObject objective = CreateImage("Objective", Cream);
         objective.transform.SetParent(briefingContent.transform, false);
         AddLayout(objective, 100f);
-        Text objectiveText = CreateText("OBJECTIVE  /  Complete all four actions in the planned order.", objective.transform, 19, FontStyle.Bold, Ink, TextAnchor.MiddleCenter);
+        Text objectiveText = CreateText("OBJECTIVE  /  Lesson objective", objective.transform, 19, FontStyle.Bold, Ink, TextAnchor.MiddleCenter);
         Stretch(objectiveText.rectTransform, 20f);
         GameObject briefingActions = CreateHorizontalGroup("Actions", briefingContent.transform, 14f);
         AddLayout(briefingActions, 64f);
@@ -136,7 +152,7 @@ public static class MainMenuSceneGenerator
         VerticalLayoutGroup builderLayout = AddVertical(builderContent, 12f, 28f);
         builderLayout.childAlignment = TextAnchor.UpperLeft;
         FixedText("MY RULES", builderContent.transform, 16, FontStyle.Bold, Teal, TextAnchor.MiddleLeft, 26f);
-        FixedText("Build the action sequence", builderContent.transform, 38, FontStyle.Bold, Ink, TextAnchor.MiddleLeft, 52f);
+        Text ruleBuilderTitle = FixedText("Build the action sequence", builderContent.transform, 38, FontStyle.Bold, Ink, TextAnchor.MiddleLeft, 52f);
         FixedText("Add actions from the left. Use UP and DOWN to match the objective.", builderContent.transform, 19, FontStyle.Normal, DeepTeal, TextAnchor.MiddleLeft, 34f);
         GameObject columns = CreateHorizontalGroup("Columns", builderContent.transform, 18f);
         AddFlexible(columns, 1f);
@@ -172,7 +188,7 @@ public static class MainMenuSceneGenerator
         GameObject topBar = CreatePanel("TopBar", gameplay.transform, new Color(Ink.r, Ink.g, Ink.b, 0.94f), new Vector2(0.03f, 0.89f), new Vector2(0.97f, 0.975f));
         HorizontalLayoutGroup topLayout = AddHorizontal(topBar, 14f, 18f);
         topLayout.childAlignment = TextAnchor.MiddleLeft;
-        Text liveLabel = CreateText("GO BAG  /  LIVE CHECK", topBar.transform, 17, FontStyle.Bold, Aqua, TextAnchor.MiddleLeft);
+        Text liveLabel = CreateText("LESSON  /  LIVE CHECK", topBar.transform, 17, FontStyle.Bold, Aqua, TextAnchor.MiddleLeft);
         AddFlexible(liveLabel.gameObject, 1f);
         Text progress = CreateText("0 / 4 steps complete", topBar.transform, 19, FontStyle.Bold, Color.white, TextAnchor.MiddleRight);
         AddLayout(progress.gameObject, 50f, 360f);
@@ -185,7 +201,7 @@ public static class MainMenuSceneGenerator
         VerticalLayoutGroup resultLayout = AddVertical(resultContent, 18f, 40f);
         resultLayout.childAlignment = TextAnchor.MiddleCenter;
         FixedText("LEVEL COMPLETE", resultContent.transform, 18, FontStyle.Bold, Success, TextAnchor.MiddleCenter, 32f);
-        FixedText("Go bag ready", resultContent.transform, 50, FontStyle.Bold, Ink, TextAnchor.MiddleCenter, 72f);
+        Text resultTitle = FixedText("Lesson complete", resultContent.transform, 50, FontStyle.Bold, Ink, TextAnchor.MiddleCenter, 72f);
         Text resultSummary = FixedText("Every essential item was packed in the planned order.", resultContent.transform, 23, FontStyle.Normal, DeepTeal, TextAnchor.MiddleCenter, 110f);
         GameObject badge = CreateImage("SuccessBadge", Aqua);
         badge.transform.SetParent(resultContent.transform, false);
@@ -200,8 +216,10 @@ public static class MainMenuSceneGenerator
         AddFlexible(playAgain.gameObject, 1f);
 
         GameFlowView view = root.GetComponent<GameFlowView>();
-        view.Configure(mainMenu, briefing, builder, gameplay, result, openLesson, briefingBack, buildRules,
-            builderBack, check, backToLessons, playAgain, availableList.transform, selectedList.transform,
+        view.Configure(mainMenu, briefing, builder, gameplay, result, briefingBack, buildRules,
+            builderBack, check, backToLessons, playAgain, lessonContainer.transform, lessonPrefab,
+            briefingTitle, briefingBody, objectiveText, ruleBuilderTitle, liveLabel, resultTitle,
+            availableList.transform, selectedList.transform,
             emptySelection.gameObject, ruleFeedback, optionPrefab, selectedPrefab, progress, gameplayFeedback, resultSummary);
         mainMenu.SetActive(true);
         briefing.SetActive(false);
@@ -214,7 +232,7 @@ public static class MainMenuSceneGenerator
         return prefab.GetComponent<GameFlowView>();
     }
 
-    private static void WireScene(string path, bool ensureCamera)
+    private static void WireScene(string path, bool ensureCamera, LevelCatalog levelCatalog)
     {
         Scene scene = EditorSceneManager.OpenScene(path, OpenSceneMode.Single);
         GameFlowController controller = Object.FindFirstObjectByType<GameFlowController>(FindObjectsInactive.Include);
@@ -233,7 +251,7 @@ public static class MainMenuSceneGenerator
         GameObject instance = (GameObject)PrefabUtility.InstantiatePrefab(uiPrefab, scene);
         instance.transform.SetParent(controller.transform, false);
         GameFlowView view = instance.GetComponent<GameFlowView>();
-        controller.ConfigureView(view);
+        controller.Configure(view, levelCatalog);
         EditorUtility.SetDirty(controller);
 
         if (Object.FindFirstObjectByType<EventSystem>(FindObjectsInactive.Include) == null)

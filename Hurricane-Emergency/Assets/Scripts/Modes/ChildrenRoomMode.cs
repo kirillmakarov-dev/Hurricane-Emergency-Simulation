@@ -64,6 +64,9 @@ public class ChildrenRoomMode : MonoBehaviour, ISimulationMode
     private readonly Queue<Animations> animationQueue = new();
     private bool isPlaying;
     private bool currentAnimationFinished;
+    private Coroutine configuredSequenceCoroutine;
+    private bool bagSequenceComplete;
+    private bool waitForBagBeforeCompletingAnnouncement;
 
     private Dictionary<Animations, Action<Action>> animationMap;
 
@@ -124,6 +127,43 @@ public class ChildrenRoomMode : MonoBehaviour, ISimulationMode
         {
             Debug.LogWarning($"No such animation in enum Animations: {animationName}");
         }
+    }
+
+    public void PlayConfiguredSequence(IReadOnlyList<string> animationNames)
+    {
+        if (animationNames == null || animationNames.Count == 0)
+        {
+            Debug.LogWarning("PlayConfiguredSequence requires at least one bedroom animation.");
+            return;
+        }
+
+        StopAllCoroutines();
+        animationQueue.Clear();
+        isPlaying = false;
+        currentAnimationFinished = false;
+        timerRun = false;
+        hurricaneWatch = false;
+        checkanimation = false;
+        playAnimation = true;
+        kelenCoroutine = null;
+        bagSequenceComplete = false;
+        waitForBagBeforeCompletingAnnouncement = true;
+        KelanPlay();
+
+        configuredSequenceCoroutine = StartCoroutine(PlayConfiguredSequenceCoroutine(animationNames));
+    }
+
+    private IEnumerator PlayConfiguredSequenceCoroutine(IReadOnlyList<string> animationNames)
+    {
+        AddAnimationFromWeb(Animations.HurricaneWatchAnnouncement.ToString());
+
+        for (int i = 0; i < animationNames.Count; i++)
+        {
+            AddAnimationFromWeb(animationNames[i]);
+        }
+
+        configuredSequenceCoroutine = null;
+        yield break;
     }
 
     private IEnumerator ProcessQueue()
@@ -225,6 +265,18 @@ public class ChildrenRoomMode : MonoBehaviour, ISimulationMode
     public void Cleanup()
     {
         Debug.Log("Cleanup ChildrenRoom mode");
+        StopAllCoroutines();
+        animationQueue.Clear();
+        isPlaying = false;
+        currentAnimationFinished = false;
+        timerRun = false;
+        hurricaneWatch = false;
+        checkanimation = false;
+        playAnimation = false;
+        kelenCoroutine = null;
+        configuredSequenceCoroutine = null;
+        bagSequenceComplete = false;
+        waitForBagBeforeCompletingAnnouncement = false;
     }
 
     private void RoomAnimations(Animations animationToPlay)
@@ -440,6 +492,13 @@ public class ChildrenRoomMode : MonoBehaviour, ISimulationMode
 
         yield return StartCoroutine(MoveToTarget(kelenMom.transform, startPosition, 3f)); // MoveToTarget
         momAnimator.SetTrigger("Standing");
+
+        if (waitForBagBeforeCompletingAnnouncement)
+        {
+            yield return new WaitUntil(() => bagSequenceComplete);
+            waitForBagBeforeCompletingAnnouncement = false;
+        }
+
         onComplete?.Invoke();
     }
 
@@ -469,6 +528,8 @@ public class ChildrenRoomMode : MonoBehaviour, ISimulationMode
 
     public IEnumerator KeyWalkPlay(GameObject objToMove, Vector3 endPoint, float speed)
     {
+        bagSequenceComplete = false;
+
         if (objToMove == null)
         {
             Debug.LogWarning("KeyWalkPlay: objToMove is null.");
@@ -495,6 +556,8 @@ public class ChildrenRoomMode : MonoBehaviour, ISimulationMode
         bag.GetComponent<Animator>().SetTrigger(OpenBagHash);
 
         yield return new WaitForSeconds(openBagDelay);
+
+        bagSequenceComplete = true;
 
     }
 

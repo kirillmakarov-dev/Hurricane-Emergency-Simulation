@@ -1,13 +1,13 @@
 # Hurricane Emergency Simulation: Current Architecture
 
-_Current checkout snapshot: 2026-08-19_
+_Current checkout snapshot: 2026-08-20_
 
 ## Document Role
 
 This file is the source of truth for the architecture that exists in the Unity project now.
 
 - It describes current code, scene wiring, runtime flow, and known constraints.
-- It records the implemented Go Bag vertical slice and identifies later expansion work.
+- It records the implemented Go Bag, Kitchen, and Bedroom lesson slices and identifies later expansion work.
 - The future implementation order and proposed classes are documented in `MB_IMPLEMENTATION_PLAN.md`.
 - When code or scene wiring changes, update this file in the same change.
 
@@ -35,9 +35,9 @@ Recovery scenes and the URP template are not runtime levels.
 
 ## Runtime Model
 
-Unity now owns the first complete lesson flow. `MainMenu.unity` contains the persistent menu entry objects (`GameFlowController`, a `GameFlowUI.prefab` instance, camera, and `EventSystem`). The prefab contains the lesson selection, briefing, rule-builder, gameplay HUD, and result screens. `GameFlowController` only changes screen state, binds events, and supplies data to those serialized views.
+Unity now owns three complete lesson flows: Go Bag, Kitchen, and Bedroom. `MainMenu.unity` contains the persistent menu entry objects (`GameFlowController`, a `GameFlowUI.prefab` instance, camera, and `EventSystem`). The prefab contains the lesson selection, briefing, rule-builder, gameplay HUD, and result screens. `GameFlowController` only changes screen state, binds events, and supplies data to those serialized views.
 
-After a valid `Check`, `LessonLaunchContext` stores the selected rule ids in order and loads `SampleScene.unity`. The gameplay scene restores that selection, starts `GoBagLesson` through `SimulationManager`, listens to `SimulationEventChannel`, displays runtime feedback, and shows the result screen. The existing mode scripts and animation controllers remain responsible for visual behavior.
+After a valid `Check`, `LessonLaunchContext` stores the selected level id and rule ids in order and loads `SampleScene.unity`. The gameplay scene restores that selection, starts `GoBagLesson`, `KitchenLesson`, or `ChildrenRoomMode` through `SimulationManager`, listens to `SimulationEventChannel`, displays runtime feedback, and shows the result screen. The existing mode scripts and animation controllers remain responsible for visual behavior. The player-facing Bedroom lesson intentionally maps to the existing `ModeName.ChildrenRoom` mode and `Children room` scene root.
 
 `SampleScene.unity` still contains all simulation lesson roots and switches between them by `ModeName`; it is not duplicated per lesson.
 
@@ -48,7 +48,7 @@ This is a non-negotiable project rule so designers can change every visual compo
 - Permanent UI hierarchy must be serialized directly in a Unity scene or in a prefab instance referenced by that scene.
 - Repeated runtime elements may be instantiated only from authored prefab assets.
 - Runtime gameplay code must not construct UI with `new GameObject`, `AddComponent`, or dynamically assembled Canvas/layout/text/button hierarchies.
-- `GameFlowController` is a coordinator, not a UI factory. It reads serialized references from `GameFlowView`, binds button callbacks, updates text/state, and instantiates only the two repeated prefab templates.
+- `GameFlowController` is a coordinator, not a UI factory. It reads serialized references from `GameFlowView`, binds button callbacks, updates text/state, and instantiates only authored repeated prefab templates.
 - Visual changes belong in prefab mode or the scene Inspector rather than in C# layout code.
 - `Tools/Hurricane/Rebuild Game Flow UI Assets` is an Editor-only scaffolding/recovery command. It never runs in a build, and running it intentionally overwrites the generated prefab visuals. Normal UI iteration must edit the prefab assets directly.
 
@@ -57,10 +57,24 @@ Current authored assets:
 | Asset | Responsibility |
 | --- | --- |
 | `Assets/prefabs/GameFlow/GameFlowUI.prefab` | All five permanent flow screens and their serialized controls |
+| `Assets/prefabs/GameFlow/LessonButton.prefab` | Repeated editable lesson-selection card |
 | `Assets/prefabs/GameFlow/RuleOptionButton.prefab` | Repeated available-rule card |
 | `Assets/prefabs/GameFlow/SelectedRuleRow.prefab` | Repeated selected-rule row with reorder/remove controls |
 | `Assets/Scenes/MainMenu.unity` | Serialized controller, UI prefab instance, camera, and EventSystem |
 | `Assets/Scenes/SampleScene.unity` | Serialized controller and UI prefab instance alongside existing simulation objects |
+
+Current authored lesson data:
+
+| Asset | Responsibility |
+| --- | --- |
+| `Assets/Data/Lessons/LevelCatalog.asset` | Ordered list used by the menu and gameplay scene |
+| `Assets/Data/Lessons/GoBagLesson.asset` | Go Bag copy, mode, required enum items, distractors, and opening events |
+| `Assets/Data/Lessons/KitchenLesson.asset` | Kitchen copy, mode, required enum items, distractors, and opening events |
+| `Assets/Data/Lessons/BedroomLesson.asset` | Bedroom copy, mode, required enum items, distractors, and opening events |
+
+`LevelDefinition` does not serialize animation command strings or duplicate runtime rule records. Designers choose the correct ordered items and distractors through `LessonRuleItem` enum lists. `LessonRuleItemCatalog` maps each enum value to the existing mode command, stable rule id, label, and completion event. A mode mismatch or duplicate item is reported as a configuration error.
+
+`Tools/Hurricane/Rebuild Lesson Data Assets` intentionally restores the three lesson assets to project defaults. Normal edits are made directly in the assets. Rebuilding Game Flow UI only creates missing lesson assets and does not overwrite existing lesson configuration.
 
 ```text
 MainMenu.unity rule selection or legacy WebGL command
@@ -88,7 +102,7 @@ EventsManager or WebGLBridge
 Browser host callbacks
 ```
 
-The Go Bag prototype no longer depends on the browser host for orchestration or rule validation. WebGL remains a supported build target and compatibility callback bridge. Other lessons still require their own `LevelDefinition` data and adapters before they can use the same Unity-native flow.
+Go Bag, Kitchen, and Bedroom no longer depend on the browser host for orchestration or rule validation. WebGL remains a supported build target and compatibility callback bridge. Other lessons still require their own `LevelDefinition` data and adapters before they can use the same Unity-native flow.
 
 ## Core Components
 
@@ -524,7 +538,7 @@ Static inspection of `SampleScene.unity` confirms:
 - all ten gameplay roots assigned in `GameModeUIController`;
 - no root assigned for `EntryScreen`;
 - all mode script components have their existing serialized scene references except the unused `BathRoomLesson.roomToyOffset` field;
-- only `SampleScene.unity` is enabled in Build Settings.
+- `MainMenu.unity` is enabled as build scene 0 and `SampleScene.unity` as build scene 1.
 
 This is repository evidence only. It does not prove that every reference, Animator state, animation event, or callback behaves correctly in Play Mode.
 
@@ -555,10 +569,10 @@ These are facts to account for during implementation, not a request to refactor 
 5. Event coverage is incomplete; several selectable actions emit `Events.Empty`.
 6. Most mode cleanup methods do not fully reset queues, coroutines, timers, held objects, or Animator state.
 7. `GardenViewMode.Cleanup()` can throw during a normal mode transition.
-8. `EntryScreenMod` and its UI wiring are not implemented.
-9. Unity has no current source of truth for level objectives, accepted rules, runtime step order, completion, or progression.
-10. There is no current local event channel through which Unity UI can observe completed gameplay actions.
-11. The Editor currently auto-selects `BathRoomLesson` from the serialized `newMode` value.
+8. `EntryScreenMod` remains unused; the Unity-native menu is owned by `MainMenu.unity` and `GameFlowController`.
+9. `LevelCatalog.asset` and its referenced `LevelDefinition` assets are the source of truth for Go Bag, Kitchen, and Bedroom objectives, accepted enum items, distractors, and runtime event order; remaining modes are not authored yet.
+10. `SimulationEventChannel` exposes completed gameplay actions to the active Unity lesson session while preserving WebGL output.
+11. The Editor currently auto-selects `House` from the serialized `newMode` value before the Unity-native gameplay flow switches to the selected lesson.
 12. `SimulationManager.ResetSimulatiom()` reloads the entire scene rather than resetting one level session.
 
 ## Missing Product Definitions

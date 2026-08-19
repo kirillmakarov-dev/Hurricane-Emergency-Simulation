@@ -11,13 +11,24 @@ public sealed class GameFlowView : MonoBehaviour
     [SerializeField] private GameObject resultScreen;
 
     [Header("Navigation")]
-    [SerializeField] private Button openLessonButton;
     [SerializeField] private Button briefingBackButton;
     [SerializeField] private Button buildRulesButton;
     [SerializeField] private Button ruleBuilderBackButton;
     [SerializeField] private Button checkButton;
     [SerializeField] private Button backToLessonsButton;
     [SerializeField] private Button playAgainButton;
+
+    [Header("Lesson Selection")]
+    [SerializeField] private Transform lessonButtonsContainer;
+    [SerializeField] private LessonButtonView lessonButtonPrefab;
+
+    [Header("Selected Lesson")]
+    [SerializeField] private Text briefingTitleText;
+    [SerializeField] private Text briefingBodyText;
+    [SerializeField] private Text objectiveText;
+    [SerializeField] private Text ruleBuilderTitleText;
+    [SerializeField] private Text gameplayLessonText;
+    [SerializeField] private Text resultTitleText;
 
     [Header("Rule Builder")]
     [SerializeField] private Transform availableRulesContainer;
@@ -32,13 +43,19 @@ public sealed class GameFlowView : MonoBehaviour
     [SerializeField] private Text gameplayFeedbackText;
     [SerializeField] private Text resultSummaryText;
 
-    public Button OpenLessonButton => openLessonButton;
     public Button BriefingBackButton => briefingBackButton;
     public Button BuildRulesButton => buildRulesButton;
     public Button RuleBuilderBackButton => ruleBuilderBackButton;
     public Button CheckButton => checkButton;
     public Button BackToLessonsButton => backToLessonsButton;
     public Button PlayAgainButton => playAgainButton;
+    public Transform LessonButtonsContainer => lessonButtonsContainer;
+    public Text BriefingTitleText => briefingTitleText;
+    public Text BriefingBodyText => briefingBodyText;
+    public Text ObjectiveText => objectiveText;
+    public Text RuleBuilderTitleText => ruleBuilderTitleText;
+    public Text GameplayLessonText => gameplayLessonText;
+    public Text ResultTitleText => resultTitleText;
     public Transform AvailableRulesContainer => availableRulesContainer;
     public Transform SelectedRulesContainer => selectedRulesContainer;
     public Text RuleFeedbackText => ruleFeedbackText;
@@ -76,6 +93,11 @@ public sealed class GameFlowView : MonoBehaviour
         return Instantiate(selectedRuleRowPrefab, parent);
     }
 
+    public LessonButtonView CreateLessonButton()
+    {
+        return Instantiate(lessonButtonPrefab, lessonButtonsContainer);
+    }
+
 #if UNITY_EDITOR
     public void Configure(
         GameObject mainMenu,
@@ -83,13 +105,20 @@ public sealed class GameFlowView : MonoBehaviour
         GameObject ruleBuilder,
         GameObject gameplay,
         GameObject result,
-        Button openLesson,
         Button briefingBack,
         Button buildRules,
         Button builderBack,
         Button check,
         Button backToLessons,
         Button playAgain,
+        Transform lessonContainer,
+        LessonButtonView lessonPrefab,
+        Text briefingTitle,
+        Text briefingBody,
+        Text objective,
+        Text ruleBuilderTitle,
+        Text gameplayLesson,
+        Text resultTitle,
         Transform availableContainer,
         Transform selectedContainer,
         GameObject emptySelection,
@@ -105,13 +134,20 @@ public sealed class GameFlowView : MonoBehaviour
         ruleBuilderScreen = ruleBuilder;
         gameplayHud = gameplay;
         resultScreen = result;
-        openLessonButton = openLesson;
         briefingBackButton = briefingBack;
         buildRulesButton = buildRules;
         ruleBuilderBackButton = builderBack;
         checkButton = check;
         backToLessonsButton = backToLessons;
         playAgainButton = playAgain;
+        lessonButtonsContainer = lessonContainer;
+        lessonButtonPrefab = lessonPrefab;
+        briefingTitleText = briefingTitle;
+        briefingBodyText = briefingBody;
+        objectiveText = objective;
+        ruleBuilderTitleText = ruleBuilderTitle;
+        gameplayLessonText = gameplayLesson;
+        resultTitleText = resultTitle;
         availableRulesContainer = availableContainer;
         selectedRulesContainer = selectedContainer;
         emptySelectionMessage = emptySelection;

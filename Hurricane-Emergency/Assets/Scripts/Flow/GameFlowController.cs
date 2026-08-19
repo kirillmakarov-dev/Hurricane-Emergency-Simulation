@@ -18,8 +18,11 @@ public sealed class GameFlowController : MonoBehaviour
     private static readonly Color Warning = Hex("D95D50");
 
     [SerializeField] private GameFlowView view;
+    [SerializeField] private LevelCatalog levelCatalog;
 
+    private readonly List<LevelDefinition> levels = new();
     private readonly List<RuleDefinition> selectedRules = new();
+    private readonly List<GameObject> generatedLessonViews = new();
     private readonly List<GameObject> generatedRuleViews = new();
     private LevelDefinition level;
     private LevelSessionController session;
@@ -32,7 +35,23 @@ public sealed class GameFlowController : MonoBehaviour
     private void Awake()
     {
         isMenuScene = SceneManager.GetActiveScene().name == MainMenuSceneName;
-        level = GoBagPrototypeLevelFactory.Create();
+        if (levelCatalog == null)
+        {
+            Debug.LogError("GameFlowController requires a serialized LevelCatalog asset.", this);
+            enabled = false;
+            return;
+        }
+
+        levels.AddRange(levelCatalog.Levels);
+        for (int i = 0; i < levels.Count; i++)
+        {
+            if (levels[i] != null) levels[i].RebuildRuntimeData();
+        }
+
+        if (!isMenuScene && LessonLaunchContext.HasLesson)
+        {
+            level = FindLevel(LessonLaunchContext.LevelId);
+        }
         if (view == null) view = GetComponentInChildren<GameFlowView>(true);
         if (view == null)
         {
@@ -58,6 +77,7 @@ public sealed class GameFlowController : MonoBehaviour
             SceneManager.LoadScene(MainMenuSceneName);
             yield break;
         }
+        ApplyLevelContent();
         yield return StartGameplay();
     }
 
@@ -65,12 +85,10 @@ public sealed class GameFlowController : MonoBehaviour
     {
         UnbindViewEvents();
         session?.Dispose();
-        if (level != null) Destroy(level);
     }
 
     private void BindViewEvents()
     {
-        view.OpenLessonButton.onClick.AddListener(ShowBriefing);
         view.BriefingBackButton.onClick.AddListener(ShowMainMenu);
         view.BuildRulesButton.onClick.AddListener(ShowRuleBuilder);
         view.RuleBuilderBackButton.onClick.AddListener(ShowBriefing);
@@ -82,7 +100,6 @@ public sealed class GameFlowController : MonoBehaviour
     private void UnbindViewEvents()
     {
         if (view == null) return;
-        view.OpenLessonButton.onClick.RemoveListener(ShowBriefing);
         view.BriefingBackButton.onClick.RemoveListener(ShowMainMenu);
         view.BuildRulesButton.onClick.RemoveListener(ShowRuleBuilder);
         view.RuleBuilderBackButton.onClick.RemoveListener(ShowBriefing);
@@ -91,8 +108,34 @@ public sealed class GameFlowController : MonoBehaviour
         view.PlayAgainButton.onClick.RemoveListener(PlayAgain);
     }
 
-    private void ShowMainMenu() { state = GameFlowState.MainMenu; view.ShowMainMenu(); }
+    private void ShowMainMenu()
+    {
+        state = GameFlowState.MainMenu;
+        level = null;
+        selectedRules.Clear();
+        RefreshLessonList();
+        view.ShowMainMenu();
+    }
+
     private void ShowBriefing() { state = GameFlowState.Briefing; view.ShowBriefing(); }
+
+    private void SelectLevel(LevelDefinition selectedLevel)
+    {
+        level = selectedLevel;
+        selectedRules.Clear();
+        ApplyLevelContent();
+        ShowBriefing();
+    }
+
+    private void ApplyLevelContent()
+    {
+        view.BriefingTitleText.text = level.Title;
+        view.BriefingBodyText.text = level.Briefing;
+        view.ObjectiveText.text = "OBJECTIVE  /  " + level.Objective;
+        view.RuleBuilderTitleText.text = level.Title;
+        view.GameplayLessonText.text = level.Title.ToUpperInvariant() + "  /  LIVE CHECK";
+        view.ResultTitleText.text = level.Title + " complete";
+    }
 
     private void ShowRuleBuilder()
     {
@@ -132,21 +175,44 @@ public sealed class GameFlowController : MonoBehaviour
         session.StepEvaluated += HandleRuntimeStep;
         session.Start();
         SimulationManager.Instance.SwitchMode(level.Mode);
-        GoBagLesson lesson = SimulationManager.Instance.GetMode<GoBagLesson>();
-        if (lesson == null)
-        {
-            ShowFatalResult("The Go Bag lesson is not available in this scene.");
-            yield break;
-        }
-
         List<string> commands = new();
         for (int i = 0; i < selectedRules.Count; i++) commands.Add(selectedRules[i].AnimationCommand);
-        lesson.PlayConfiguredSequence(commands);
+
+        if (!LaunchConfiguredSequence(commands))
+        {
+            ShowFatalResult(level.Title + " is not available in this scene.");
+        }
+
+        yield break;
+    }
+
+    private bool LaunchConfiguredSequence(IReadOnlyList<string> commands)
+    {
+        switch (level.Mode)
+        {
+            case ModeName.GoBagLesson:
+                GoBagLesson goBag = SimulationManager.Instance.GetMode<GoBagLesson>();
+                if (goBag == null) return false;
+                goBag.PlayConfiguredSequence(commands);
+                return true;
+            case ModeName.KitchenLesson:
+                KitchenLesson kitchen = SimulationManager.Instance.GetMode<KitchenLesson>();
+                if (kitchen == null) return false;
+                kitchen.PlayConfiguredSequence(commands);
+                return true;
+            case ModeName.ChildrenRoom:
+                ChildrenRoomMode bedroom = SimulationManager.Instance.GetMode<ChildrenRoomMode>();
+                if (bedroom == null) return false;
+                bedroom.PlayConfiguredSequence(commands);
+                return true;
+            default:
+                return false;
+        }
     }
 
     private bool RestoreSelectedRules()
     {
-        if (!LessonLaunchContext.HasLesson || LessonLaunchContext.LevelId != level.LevelId) return false;
+        if (!LessonLaunchContext.HasLesson || level == null || LessonLaunchContext.LevelId != level.LevelId) return false;
         selectedRules.Clear();
         for (int i = 0; i < LessonLaunchContext.SelectedRuleIds.Count; i++)
         {
@@ -175,7 +241,7 @@ public sealed class GameFlowController : MonoBehaviour
                 view.GameplayFeedbackText.color = Aqua;
                 break;
             case RuntimeStepResultType.LevelCompleted:
-                view.GameplayFeedbackText.text = "All rules completed. The go bag is ready.";
+                view.GameplayFeedbackText.text = "All lesson actions completed correctly.";
                 view.GameplayFeedbackText.color = Aqua;
                 StartCoroutine(ShowResultAfterAnimationSettles());
                 break;
@@ -201,8 +267,8 @@ public sealed class GameFlowController : MonoBehaviour
         yield return new WaitForSecondsRealtime(2.25f);
         state = GameFlowState.LevelResult;
         view.ResultSummaryText.text = mistakes == 0
-            ? "Perfect run. Every essential item was packed in the planned order."
-            : $"The bag is ready with {mistakes} recorded mistake(s).";
+            ? "Perfect run. Every required action was completed in the planned order."
+            : $"The lesson finished with {mistakes} recorded mistake(s).";
         view.ShowResult();
     }
 
@@ -257,6 +323,27 @@ public sealed class GameFlowController : MonoBehaviour
         }
     }
 
+    private void RefreshLessonList()
+    {
+        ClearGeneratedLessonViews();
+
+        for (int i = 0; i < levels.Count; i++)
+        {
+            int lessonNumber = i + 1;
+            LevelDefinition lesson = levels[i];
+            LessonButtonView lessonView = view.CreateLessonButton();
+            lessonView.Bind(lessonNumber, lesson.Title, lesson.Objective, () => SelectLevel(lesson));
+            generatedLessonViews.Add(lessonView.gameObject);
+        }
+    }
+
+    private void ClearGeneratedLessonViews()
+    {
+        for (int i = generatedLessonViews.Count - 1; i >= 0; i--)
+            if (generatedLessonViews[i] != null) Destroy(generatedLessonViews[i]);
+        generatedLessonViews.Clear();
+    }
+
     private void ClearGeneratedRuleViews()
     {
         for (int i = generatedRuleViews.Count - 1; i >= 0; i--)
@@ -274,8 +361,22 @@ public sealed class GameFlowController : MonoBehaviour
     private void PlayAgain() { session?.Dispose(); SceneManager.LoadScene(GameplaySceneName); }
 
 #if UNITY_EDITOR
-    public void ConfigureView(GameFlowView gameFlowView) => view = gameFlowView;
+    public void Configure(GameFlowView gameFlowView, LevelCatalog catalog)
+    {
+        view = gameFlowView;
+        levelCatalog = catalog;
+    }
 #endif
+
+    private LevelDefinition FindLevel(string levelId)
+    {
+        for (int i = 0; i < levels.Count; i++)
+        {
+            if (levels[i].LevelId == levelId) return levels[i];
+        }
+
+        return null;
+    }
 
     private static string FriendlyEventName(Events eventType) => eventType switch
     {
@@ -283,6 +384,11 @@ public sealed class GameFlowController : MonoBehaviour
         Events.PackWater => "Water",
         Events.PackFlashlight => "Flashlight",
         Events.PackBook => "Books",
+        Events.PackCannedFood => "Canned food",
+        Events.PackCrackers => "Crackers",
+        Events.HurricaneWatch => "Hurricane watch",
+        Events.PackClothes => "Clothes",
+        Events.PackToys => "Toy",
         _ => eventType.ToString()
     };
 

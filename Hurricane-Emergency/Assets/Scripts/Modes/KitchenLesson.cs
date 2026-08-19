@@ -64,10 +64,12 @@ public class KitchenLesson : MonoBehaviour, ISimulationMode
     private Vector3 bagPositionLeft = new Vector3(0.5f, -2f, 0f); // Position of the bag
 
     private Coroutine KayCoroutine;
+    private Coroutine configuredSequenceCoroutine;
 
     private readonly Queue<KitchenAnimations> animationQueue = new();
     private bool isPlaying;
     private bool currentAnimationFinished;
+    private bool bagSequenceComplete;
 
     private Dictionary<KitchenAnimations, Action<Action>> animationMap;
 
@@ -200,7 +202,7 @@ public class KitchenLesson : MonoBehaviour, ISimulationMode
 
 
 
-    IEnumerator DadEnterRoomCoroutine()
+    IEnumerator DadEnterRoomCoroutine(bool waitForBag = false)
     {
         bool flipX = true; // Set to true to flip the character when moving left
         dadAnimator.SetTrigger("Walk");
@@ -214,6 +216,44 @@ public class KitchenLesson : MonoBehaviour, ISimulationMode
         yield return MoveToTarget(dad.transform, new Vector3(-11f, -2f, 0f), 2f, flipX);
         dadAnimator.SetTrigger("Idle");
 
+        if (waitForBag)
+        {
+            yield return new WaitUntil(() => bagSequenceComplete);
+        }
+
+    }
+
+    public void PlayConfiguredSequence(IReadOnlyList<string> animationNames)
+    {
+        if (animationNames == null || animationNames.Count == 0)
+        {
+            Debug.LogWarning("PlayConfiguredSequence requires at least one kitchen animation.");
+            return;
+        }
+
+        StopAllCoroutines();
+        animationQueue.Clear();
+        isPlaying = false;
+        currentAnimationFinished = false;
+        playAnimation = false;
+        simulationStart = false;
+        KayCoroutine = null;
+        bagSequenceComplete = false;
+        kayAnimator.SetTrigger("Idle");
+
+        configuredSequenceCoroutine = StartCoroutine(PlayConfiguredSequenceCoroutine(animationNames));
+    }
+
+    private IEnumerator PlayConfiguredSequenceCoroutine(IReadOnlyList<string> animationNames)
+    {
+        yield return DadEnterRoomCoroutine(true);
+
+        for (int i = 0; i < animationNames.Count; i++)
+        {
+            AddGoBagKitchenAnimationFromWeb(animationNames[i]);
+        }
+
+        configuredSequenceCoroutine = null;
     }
 
     public void KitchenOnGivesReminder() //Called from WebGL when dad gives reminder to kelen
@@ -271,6 +311,14 @@ public class KitchenLesson : MonoBehaviour, ISimulationMode
     public void Cleanup()
     {
         Debug.Log("Cleanup ChildrenRoom mode");
+        StopAllCoroutines();
+        animationQueue.Clear();
+        isPlaying = false;
+        currentAnimationFinished = false;
+        playAnimation = false;
+        simulationStart = false;
+        KayCoroutine = null;
+        configuredSequenceCoroutine = null;
     }
 
 
@@ -380,6 +428,7 @@ public class KitchenLesson : MonoBehaviour, ISimulationMode
 
     public void KelanTakeBag()
     {
+        bagSequenceComplete = false;
         StartCoroutine(KeyWalkToBag(kelanObj, new Vector3(1.33f, -1.33f, 0f), 2f));
     }
 
@@ -441,6 +490,8 @@ public class KitchenLesson : MonoBehaviour, ISimulationMode
         bag.GetComponent<Animator>().SetTrigger(OpenBagHash);
 
         yield return new WaitForSeconds(openBagDelay);
+
+        bagSequenceComplete = true;
 
     }
 

@@ -1,7 +1,11 @@
 using NUnit.Framework;
+using UnityEditor;
+using UnityEngine;
 
 public sealed class RuleSystemTests
 {
+    private const string CatalogPath = "Assets/Data/Lessons/LevelCatalog.asset";
+
     [TearDown]
     public void TearDown()
     {
@@ -100,5 +104,109 @@ public sealed class RuleSystemTests
         Assert.That(LessonLaunchContext.HasLesson, Is.True);
         Assert.That(LessonLaunchContext.LevelId, Is.EqualTo("go-bag"));
         Assert.That(LessonLaunchContext.SelectedRuleIds, Is.EqualTo(new[] { "water", "flashlight" }));
+    }
+
+    [Test]
+    public void ScriptableObjectCatalog_ContainsAllThreeLessons()
+    {
+        LevelCatalog catalog = AssetDatabase.LoadAssetAtPath<LevelCatalog>(CatalogPath);
+
+        Assert.That(catalog, Is.Not.Null);
+        Assert.That(catalog.Levels.Count, Is.EqualTo(3));
+        Assert.That(catalog.Levels[0].LevelId, Is.EqualTo("go-bag-prototype"));
+        Assert.That(catalog.Levels[1].LevelId, Is.EqualTo("kitchen-lesson"));
+        Assert.That(catalog.Levels[2].LevelId, Is.EqualTo("bedroom-lesson"));
+        Assert.That(catalog.Levels[1].Mode, Is.EqualTo(ModeName.KitchenLesson));
+        Assert.That(catalog.Levels[2].Mode, Is.EqualTo(ModeName.ChildrenRoom));
+    }
+
+    [Test]
+    public void KitchenLesson_UsesOnlyExistingRuntimeEvents()
+    {
+        LevelDefinition level = LoadLevel(1);
+        level.RebuildRuntimeData();
+
+        Assert.That(level.RequiredItems, Is.EqualTo(new[]
+        {
+            LessonRuleItem.KitchenCannedFood,
+            LessonRuleItem.KitchenCrackers,
+            LessonRuleItem.KitchenWater
+        }));
+        Assert.That(level.ExpectedRuleIds, Is.EqualTo(new[]
+        {
+            "kitchen-canned-food",
+            "kitchen-crackers",
+            "kitchen-water"
+        }));
+        Assert.That(level.RequiredRuntimeEvents, Is.EqualTo(new[]
+        {
+            Events.GobagReminder,
+            Events.PackCannedFood,
+            Events.PackCrackers,
+            Events.PackWater
+        }));
+    }
+
+    [Test]
+    public void BedroomLesson_UsesChildrenRoomEventSequence()
+    {
+        LevelDefinition level = LoadLevel(2);
+        level.RebuildRuntimeData();
+
+        Assert.That(level.RequiredItems, Is.EqualTo(new[]
+        {
+            LessonRuleItem.BedroomClothes,
+            LessonRuleItem.BedroomWater,
+            LessonRuleItem.BedroomFlashlight,
+            LessonRuleItem.BedroomToy
+        }));
+        Assert.That(level.ExpectedRuleIds, Is.EqualTo(new[]
+        {
+            "bedroom-clothes",
+            "bedroom-water",
+            "bedroom-flashlight",
+            "bedroom-toy"
+        }));
+        Assert.That(level.RequiredRuntimeEvents, Is.EqualTo(new[]
+        {
+            Events.HurricaneWatch,
+            Events.PackClothes,
+            Events.PackWater,
+            Events.PackFlashlight,
+            Events.PackToys
+        }));
+    }
+
+    [Test]
+    public void EveryLesson_SeparatesRequiredItemsAndDistractors()
+    {
+        LevelCatalog catalog = AssetDatabase.LoadAssetAtPath<LevelCatalog>(CatalogPath);
+        Assert.That(catalog, Is.Not.Null);
+
+        for (int levelIndex = 0; levelIndex < catalog.Levels.Count; levelIndex++)
+        {
+            LevelDefinition level = catalog.Levels[levelIndex];
+            level.RebuildRuntimeData();
+
+            Assert.That(level.AvailableRules.Count,
+                Is.EqualTo(level.RequiredItems.Count + level.Distractors.Count),
+                level.LevelId);
+
+            for (int ruleIndex = 0; ruleIndex < level.AvailableRules.Count; ruleIndex++)
+            {
+                bool expectedDistractor = ruleIndex >= level.RequiredItems.Count;
+                Assert.That(level.AvailableRules[ruleIndex].IsDistractor,
+                    Is.EqualTo(expectedDistractor),
+                    $"{level.LevelId}: {level.AvailableRules[ruleIndex].RuleId}");
+            }
+        }
+    }
+
+    private static LevelDefinition LoadLevel(int index)
+    {
+        LevelCatalog catalog = AssetDatabase.LoadAssetAtPath<LevelCatalog>(CatalogPath);
+        Assert.That(catalog, Is.Not.Null);
+        Assert.That(catalog.Levels.Count, Is.GreaterThan(index));
+        return catalog.Levels[index];
     }
 }

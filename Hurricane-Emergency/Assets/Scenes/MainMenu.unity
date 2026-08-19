@@ -119,7 +119,7 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1001 &69498944
+--- !u!1001 &625426536
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -216,10 +216,10 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 47410b645018a4c47aeb4f48cc85847f, type: 3}
---- !u!114 &69498945 stripped
+--- !u!114 &625426537 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 5761850627879818890, guid: 47410b645018a4c47aeb4f48cc85847f, type: 3}
-  m_PrefabInstance: {fileID: 69498944}
+  m_PrefabInstance: {fileID: 625426536}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 0}
   m_Enabled: 1
@@ -227,10 +227,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0d3bd9889f832084fae14b5c39f69610, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameFlowView
---- !u!224 &69498946 stripped
+--- !u!224 &625426538 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 6695503207366379616, guid: 47410b645018a4c47aeb4f48cc85847f, type: 3}
-  m_PrefabInstance: {fileID: 69498944}
+  m_PrefabInstance: {fileID: 625426536}
   m_PrefabAsset: {fileID: 0}
 --- !u!1 &996157365
 GameObject:
@@ -466,7 +466,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82d9c22951501524dae19e64d6f6ed7f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameFlowController
-  view: {fileID: 69498945}
+  view: {fileID: 625426537}
+  levelCatalog: {fileID: 11400000, guid: bb2c5c2fb1e0efc49bc0e190dbca31af, type: 2}
 --- !u!4 &2012098840
 Transform:
   m_ObjectHideFlags: 0
@@ -480,7 +481,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 69498946}
+  - {fileID: 625426538}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1660057539 &9223372036854775807

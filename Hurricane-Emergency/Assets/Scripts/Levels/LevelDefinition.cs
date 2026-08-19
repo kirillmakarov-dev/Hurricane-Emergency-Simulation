@@ -39,6 +39,7 @@ public sealed class RuleDefinition
 [CreateAssetMenu(fileName = "LevelDefinition", menuName = "Hurricane/Level Definition")]
 public sealed class LevelDefinition : ScriptableObject
 {
+    [Header("Lesson")]
     [SerializeField] private string levelId;
     [SerializeField] private string title;
     [TextArea(2, 5)]
@@ -46,103 +47,123 @@ public sealed class LevelDefinition : ScriptableObject
     [TextArea(2, 5)]
     [SerializeField] private string objective;
     [SerializeField] private ModeName mode;
-    [SerializeField] private List<RuleDefinition> availableRules = new();
-    [SerializeField] private List<string> expectedRuleIds = new();
-    [SerializeField] private List<Events> requiredRuntimeEvents = new();
+
+    [Header("Rule Selection")]
+    [Tooltip("Correct items in the exact order required to pass Check.")]
+    [SerializeField] private List<LessonRuleItem> requiredItems = new();
+    [Tooltip("Incorrect options shown together with the required items.")]
+    [SerializeField] private List<LessonRuleItem> distractors = new();
+
+    [Header("Runtime")]
+    [Tooltip("Events that happen before the selected item sequence, such as a reminder or warning.")]
+    [SerializeField] private List<Events> openingRuntimeEvents = new();
+
+    [NonSerialized] private readonly List<RuleDefinition> availableRules = new();
+    [NonSerialized] private readonly List<string> expectedRuleIds = new();
+    [NonSerialized] private readonly List<Events> requiredRuntimeEvents = new();
+    [NonSerialized] private bool runtimeDataBuilt;
 
     public string LevelId => levelId;
     public string Title => title;
     public string Briefing => briefing;
     public string Objective => objective;
     public ModeName Mode => mode;
-    public IReadOnlyList<RuleDefinition> AvailableRules => availableRules;
-    public IReadOnlyList<string> ExpectedRuleIds => expectedRuleIds;
-    public IReadOnlyList<Events> RequiredRuntimeEvents => requiredRuntimeEvents;
+    public IReadOnlyList<LessonRuleItem> RequiredItems => requiredItems;
+    public IReadOnlyList<LessonRuleItem> Distractors => distractors;
+    public IReadOnlyList<RuleDefinition> AvailableRules { get { EnsureRuntimeData(); return availableRules; } }
+    public IReadOnlyList<string> ExpectedRuleIds { get { EnsureRuntimeData(); return expectedRuleIds; } }
+    public IReadOnlyList<Events> RequiredRuntimeEvents { get { EnsureRuntimeData(); return requiredRuntimeEvents; } }
 
-    public void ConfigureRuntime(
+    public void RebuildRuntimeData()
+    {
+        runtimeDataBuilt = true;
+        availableRules.Clear();
+        expectedRuleIds.Clear();
+        requiredRuntimeEvents.Clear();
+        requiredRuntimeEvents.AddRange(openingRuntimeEvents);
+
+        HashSet<LessonRuleItem> usedItems = new();
+        for (int i = 0; i < requiredItems.Count; i++)
+        {
+            if (!TryAddItem(requiredItems[i], false, usedItems, out RuleDefinition rule)) continue;
+            availableRules.Add(rule);
+            expectedRuleIds.Add(rule.RuleId);
+            if (rule.RuntimeEvent != Events.Empty) requiredRuntimeEvents.Add(rule.RuntimeEvent);
+        }
+
+        for (int i = 0; i < distractors.Count; i++)
+        {
+            if (!TryAddItem(distractors[i], true, usedItems, out RuleDefinition rule)) continue;
+            availableRules.Add(rule);
+        }
+    }
+
+    private bool TryAddItem(
+        LessonRuleItem item,
+        bool isDistractor,
+        HashSet<LessonRuleItem> usedItems,
+        out RuleDefinition rule)
+    {
+        rule = null;
+        if (!usedItems.Add(item))
+        {
+            Debug.LogError($"Level '{levelId}' contains duplicate item '{item}'.", this);
+            return false;
+        }
+
+        if (!LessonRuleItemCatalog.TryGet(item, out LessonRuleDescriptor descriptor))
+        {
+            Debug.LogError($"Level '{levelId}' contains unmapped item '{item}'.", this);
+            return false;
+        }
+
+        if (descriptor.Mode != mode)
+        {
+            Debug.LogError($"Item '{item}' belongs to {descriptor.Mode}, but level '{levelId}' uses {mode}.", this);
+            return false;
+        }
+
+        rule = descriptor.CreateRule(isDistractor);
+        return true;
+    }
+
+    private void EnsureRuntimeData()
+    {
+        if (!runtimeDataBuilt) RebuildRuntimeData();
+    }
+
+    private void OnEnable()
+    {
+        runtimeDataBuilt = false;
+    }
+
+#if UNITY_EDITOR
+    private void OnValidate()
+    {
+        runtimeDataBuilt = false;
+        if (!string.IsNullOrWhiteSpace(levelId)) RebuildRuntimeData();
+    }
+
+    public void ConfigureEditor(
         string id,
         string displayTitle,
         string levelBriefing,
         string levelObjective,
         ModeName targetMode,
-        IEnumerable<RuleDefinition> rules,
-        IEnumerable<string> expectedRules,
-        IEnumerable<Events> runtimeEvents)
+        IEnumerable<LessonRuleItem> correctItems,
+        IEnumerable<LessonRuleItem> incorrectItems,
+        IEnumerable<Events> openingEvents)
     {
         levelId = id;
         title = displayTitle;
         briefing = levelBriefing;
         objective = levelObjective;
         mode = targetMode;
-        availableRules = new List<RuleDefinition>(rules);
-        expectedRuleIds = new List<string>(expectedRules);
-        requiredRuntimeEvents = new List<Events>(runtimeEvents);
+        requiredItems = new List<LessonRuleItem>(correctItems);
+        distractors = new List<LessonRuleItem>(incorrectItems);
+        openingRuntimeEvents = new List<Events>(openingEvents);
+        runtimeDataBuilt = false;
+        RebuildRuntimeData();
     }
-}
-
-public static class GoBagPrototypeLevelFactory
-{
-    public static LevelDefinition Create()
-    {
-        LevelDefinition level = ScriptableObject.CreateInstance<LevelDefinition>();
-        level.name = "GoBagPrototypeLevel";
-        level.hideFlags = HideFlags.DontSave;
-
-        RuleDefinition water = new(
-            "pack-water",
-            "Pack water",
-            "Add drinking water to the emergency bag.",
-            GoBagLesson.GaBagAnimations.KelenTakeWater.ToString(),
-            Events.PackWater);
-
-        RuleDefinition flashlight = new(
-            "pack-flashlight",
-            "Pack a flashlight",
-            "Add a flashlight in case the power goes out.",
-            GoBagLesson.GaBagAnimations.KelenTakeFlashlight.ToString(),
-            Events.PackFlashlight);
-
-        RuleDefinition books = new(
-            "pack-books",
-            "Pack books",
-            "Add a book for a longer stay in the shelter.",
-            GoBagLesson.GaBagAnimations.KelenTakeBooks.ToString(),
-            Events.PackBook);
-
-        RuleDefinition candles = new(
-            "pack-candles",
-            "Pack candles",
-            "An open flame is unsafe during an emergency.",
-            GoBagLesson.GaBagAnimations.KelenTakeCandels.ToString(),
-            Events.Empty,
-            true);
-
-        RuleDefinition scissors = new(
-            "pack-scissors",
-            "Pack scissors",
-            "This is not required for this lesson's emergency bag.",
-            GoBagLesson.GaBagAnimations.KelenTakeScissors.ToString(),
-            Events.Empty,
-            true);
-
-        RuleDefinition ball = new(
-            "pack-ball",
-            "Pack a ball",
-            "The ball takes space needed by essential supplies.",
-            GoBagLesson.GaBagAnimations.KelanTakeBall.ToString(),
-            Events.Empty,
-            true);
-
-        level.ConfigureRuntime(
-            "go-bag-prototype",
-            "Build a Go Bag",
-            "Kelan's family is preparing for a hurricane. Choose the essential items and arrange the actions before the simulation begins.",
-            "After the parents give a reminder, pack water, a flashlight, and books in that order.",
-            ModeName.GoBagLesson,
-            new[] { water, flashlight, books, candles, scissors, ball },
-            new[] { water.RuleId, flashlight.RuleId, books.RuleId },
-            new[] { Events.GobagReminder, Events.PackWater, Events.PackFlashlight, Events.PackBook });
-
-        return level;
-    }
+#endif
 }
