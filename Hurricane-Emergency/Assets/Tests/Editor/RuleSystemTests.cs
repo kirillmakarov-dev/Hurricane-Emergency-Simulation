@@ -2,6 +2,12 @@ using NUnit.Framework;
 
 public sealed class RuleSystemTests
 {
+    [TearDown]
+    public void TearDown()
+    {
+        LessonLaunchContext.Clear();
+    }
+
     private static RuleDefinition Rule(string id, Events eventType)
     {
         return new RuleDefinition(id, id, id, id, eventType);
@@ -81,5 +87,18 @@ public sealed class RuleSystemTests
         Assert.That(outOfOrder.Type, Is.EqualTo(RuntimeStepResultType.OutOfOrder));
         Assert.That(accepted.Type, Is.EqualTo(RuntimeStepResultType.Correct));
         Assert.That(duplicate.Type, Is.EqualTo(RuntimeStepResultType.Duplicate));
+    }
+
+    [Test]
+    public void LessonLaunchContext_PreservesSelectedRuleOrder()
+    {
+        RuleDefinition water = Rule("water", Events.PackWater);
+        RuleDefinition flashlight = Rule("flashlight", Events.PackFlashlight);
+
+        LessonLaunchContext.SetLesson("go-bag", new[] { water, flashlight });
+
+        Assert.That(LessonLaunchContext.HasLesson, Is.True);
+        Assert.That(LessonLaunchContext.LevelId, Is.EqualTo("go-bag"));
+        Assert.That(LessonLaunchContext.SelectedRuleIds, Is.EqualTo(new[] { "water", "flashlight" }));
     }
 }

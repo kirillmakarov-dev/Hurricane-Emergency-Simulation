@@ -7,7 +7,7 @@ _Current checkout snapshot: 2026-08-19_
 This file is the source of truth for the architecture that exists in the Unity project now.
 
 - It describes current code, scene wiring, runtime flow, and known constraints.
-- It does not prescribe the future rule-builder implementation.
+- It records the implemented Go Bag vertical slice and identifies later expansion work.
 - The future implementation order and proposed classes are documented in `MB_IMPLEMENTATION_PLAN.md`.
 - When code or scene wiring changes, update this file in the same change.
 
@@ -16,8 +16,9 @@ This file is the source of truth for the architecture that exists in the Unity p
 | Item | Current value |
 | --- | --- |
 | Unity version | `6000.3.3f1` |
-| Runtime style | One primary Unity scene with mode-based content activation |
-| Enabled build scene | `Assets/Scenes/SampleScene.unity` |
+| Runtime style | Unity menu scene plus a mode-based simulation scene |
+| Build scene 0 | `Assets/Scenes/MainMenu.unity` |
+| Build scene 1 | `Assets/Scenes/SampleScene.unity` |
 | Render pipeline | Universal Render Pipeline `17.3.0` |
 | UI | UGUI `2.0.0` and TextMesh Pro assets |
 | Browser integration | `Assets/Plugins/Web.jslib` through `WebGLBridge` |
@@ -34,10 +35,35 @@ Recovery scenes and the URP template are not runtime levels.
 
 ## Runtime Model
 
-The project does not currently load a separate Unity scene for each lesson. `SampleScene.unity` contains the simulation content and switches between lesson roots by `ModeName`.
+Unity now owns the first complete lesson flow. `MainMenu.unity` contains the persistent menu entry objects (`GameFlowController`, a `GameFlowUI.prefab` instance, camera, and `EventSystem`). The prefab contains the lesson selection, briefing, rule-builder, gameplay HUD, and result screens. `GameFlowController` only changes screen state, binds events, and supplies data to those serialized views.
+
+After a valid `Check`, `LessonLaunchContext` stores the selected rule ids in order and loads `SampleScene.unity`. The gameplay scene restores that selection, starts `GoBagLesson` through `SimulationManager`, listens to `SimulationEventChannel`, displays runtime feedback, and shows the result screen. The existing mode scripts and animation controllers remain responsible for visual behavior.
+
+`SampleScene.unity` still contains all simulation lesson roots and switches between them by `ModeName`; it is not duplicated per lesson.
+
+## UI Authoring Constraint
+
+This is a non-negotiable project rule so designers can change every visual component in the Unity Inspector:
+
+- Permanent UI hierarchy must be serialized directly in a Unity scene or in a prefab instance referenced by that scene.
+- Repeated runtime elements may be instantiated only from authored prefab assets.
+- Runtime gameplay code must not construct UI with `new GameObject`, `AddComponent`, or dynamically assembled Canvas/layout/text/button hierarchies.
+- `GameFlowController` is a coordinator, not a UI factory. It reads serialized references from `GameFlowView`, binds button callbacks, updates text/state, and instantiates only the two repeated prefab templates.
+- Visual changes belong in prefab mode or the scene Inspector rather than in C# layout code.
+- `Tools/Hurricane/Rebuild Game Flow UI Assets` is an Editor-only scaffolding/recovery command. It never runs in a build, and running it intentionally overwrites the generated prefab visuals. Normal UI iteration must edit the prefab assets directly.
+
+Current authored assets:
+
+| Asset | Responsibility |
+| --- | --- |
+| `Assets/prefabs/GameFlow/GameFlowUI.prefab` | All five permanent flow screens and their serialized controls |
+| `Assets/prefabs/GameFlow/RuleOptionButton.prefab` | Repeated available-rule card |
+| `Assets/prefabs/GameFlow/SelectedRuleRow.prefab` | Repeated selected-rule row with reorder/remove controls |
+| `Assets/Scenes/MainMenu.unity` | Serialized controller, UI prefab instance, camera, and EventSystem |
+| `Assets/Scenes/SampleScene.unity` | Serialized controller and UI prefab instance alongside existing simulation objects |
 
 ```text
-WebGL command or Editor mode field
+MainMenu.unity rule selection or legacy WebGL command
                |
                v
 ObjectsHolder / SimulationManager
@@ -62,7 +88,7 @@ EventsManager or WebGLBridge
 Browser host callbacks
 ```
 
-At present, the browser host provides much of the orchestration and rule logic. Unity owns the visuals and mode-specific execution but does not yet have a native rule builder, runtime rule evaluator, level result flow, or progression save.
+The Go Bag prototype no longer depends on the browser host for orchestration or rule validation. WebGL remains a supported build target and compatibility callback bridge. Other lessons still require their own `LevelDefinition` data and adapters before they can use the same Unity-native flow.
 
 ## Core Components
 
@@ -82,12 +108,12 @@ Current responsibilities:
 - publish `OnModeChanged` for UI activation;
 - initialize/reset the browser host through `WebGLBridge`;
 - pause or resume `Time.timeScale` and audio from a WebGL string command;
-- reload build scene index `0` for a full simulation reset.
+- reload the active scene for a legacy simulation reset without assuming a fixed build index.
 
 Important current behavior:
 
 - In the Unity Editor, `Update()` compares `CurrentMode` with the public `newMode` field and switches automatically.
-- `SampleScene.unity` currently serializes `newMode` as enum value `10`, which is `BathRoomLesson`.
+- `SampleScene.unity` currently serializes `newMode` as enum value `1`, which is `House`; the Unity-native flow immediately switches to the selected lesson mode after loading.
 - `SwitchMode` calls `Cleanup()`, but it does not call `OnSimulationEnd()`.
 - The manager and all mode components are serialized on the same scene GameObject.
 - If a mode component is missing, `GameModeFactory` can add it dynamically. This is unsafe for modes that require Inspector references.

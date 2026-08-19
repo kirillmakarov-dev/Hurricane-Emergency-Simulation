@@ -110,7 +110,7 @@ public class SimulationManager : Singelton<SimulationManager>
     }
     public void ResetSimulatiom() // from WebGL
     {
-        SceneManager.LoadScene(0);
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
     public void SetSimulationStateInUnity(string state) // from WebGL

@@ -26,6 +26,6 @@ public class SimulationConfig : MonoBehaviour
     }
     public void ResetSimulatiom() // from WebGL
     {
-        SceneManager.LoadScene(0);
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 }

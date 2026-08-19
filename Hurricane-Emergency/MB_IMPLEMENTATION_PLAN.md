@@ -2,6 +2,22 @@
 
 _Purpose: a step-by-step implementation guide for moving the current WebGL-driven simulation into a native Unity flow while preserving the existing animations, scene logic, and gameplay behavior._
 
+## Implementation Status
+
+The first technical vertical slice is implemented for `GoBagLesson`:
+
+- `MainMenu.unity` is build scene 0 and owns lesson selection, briefing, and rule assembly.
+- `SampleScene.unity` is build scene 1 and owns the existing simulation content.
+- Both scenes contain a serialized `GameFlowUI.prefab` instance; runtime code does not construct the interface.
+- Available-rule cards and selected-rule rows are instantiated only from dedicated prefab templates.
+- `LessonLaunchContext` transfers the validated rule ids between scenes locally in Unity.
+- `RuleValidator` blocks invalid or misordered selections before gameplay.
+- `SimulationEventChannel` and `LevelSessionController` validate runtime events without replacing existing animations.
+- Result, replay, and return-to-menu paths are connected.
+- WebGL callbacks remain available as compatibility output; they are not the source of truth for this flow.
+
+The remaining phases apply this pattern to additional lessons and then extract repeated code into helpers.
+
 ## Goal
 
 Build a Unity-first flow where:
@@ -19,6 +35,9 @@ Build a Unity-first flow where:
 
 - Do not break the current animation flow.
 - Do not replace working scene logic just to change architecture.
+- Do not create Canvas, panels, text, buttons, layout components, or other UI hierarchy from runtime code.
+- Keep every permanent UI element in a scene or prefab; create repeated elements only by instantiating an authored prefab.
+- Keep visual configuration editable in the Unity Inspector rather than encoded in `GameFlowController`.
 - Keep existing mode-specific behavior intact.
 - Add the new flow on top of the current system first, then refactor later.
 - Keep event names and level actions traceable and debuggable.
@@ -278,6 +297,14 @@ The evaluator observes completed actions. It does not invoke mode functions and 
 
 ### UI
 
+#### UI authoring rule
+
+`GameFlowUI.prefab` is the editable source of truth for permanent screens. It is instantiated and serialized in `MainMenu.unity` and `SampleScene.unity`. `RuleOptionButton.prefab` and `SelectedRuleRow.prefab` are the only dynamic UI templates in the first vertical slice. Runtime scripts may bind data and callbacks or instantiate these templates, but they may not assemble UI components or layout hierarchies in code.
+
+This keeps the flow visually editable without changing gameplay code and preserves a clear boundary between presentation and orchestration.
+
+The Editor menu command `Tools/Hurricane/Rebuild Game Flow UI Assets` exists only to scaffold or recover the baseline assets. It does not run in the player. Because it replaces the generated prefabs, normal visual work must be done directly in prefab mode and the command should be rerun only intentionally.
+
 #### `MainMenuView`
 
 Builds level buttons/cards from `LevelCatalog` and reports the selected level to `GameFlowController`.
@@ -462,8 +489,10 @@ Existing mode classes stay in `Assets/Scripts/Modes/`. Do not move them during t
 
 ## Unity Editor Setup Checklist
 
-- `SampleScene.unity` contains one configured `GameFlowController`.
-- `EntryScreen` is configured in `GameModeUIController` with the menu root.
+- `MainMenu.unity` and `SampleScene.unity` each contain one configured `GameFlowController` with a serialized `GameFlowView` reference.
+- Both scenes contain a `GameFlowUI.prefab` instance rather than runtime-generated screens.
+- `RuleOptionButton.prefab` and `SelectedRuleRow.prefab` have all labels and buttons assigned in their view components.
+- Runtime Flow scripts contain no `new GameObject` or `AddComponent` UI construction.
 - Gameplay UI roots are separate from mode-specific scene roots.
 - `LevelCatalog` contains unique level ids in intended progression order.
 - Every `LevelDefinition` references an existing `ModeName` and unique rule ids.
