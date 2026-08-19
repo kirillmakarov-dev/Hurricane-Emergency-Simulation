@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: BedroomLesson
   m_EditorClassIdentifier: Assembly-CSharp::LevelDefinition
   levelId: bedroom-lesson
-  title: Prepare the bedroom
-  briefing: A hurricane watch has been announced. Kelan needs to choose useful bedroom
-    items before the family leaves.
+  title: Children Room
+  briefing: A hurricane watch has been announced. Kelan needs to choose useful items
+    before the family leaves.
   objective: After the hurricane watch, pack clothes, water, a flashlight, and one
     toy in that order.
   mode: 4
