@@ -107,21 +107,23 @@ public sealed class RuleSystemTests
     }
 
     [Test]
-    public void ScriptableObjectCatalog_ContainsAllFiveLessons()
+    public void ScriptableObjectCatalog_ContainsAllSixLessons()
     {
         LevelCatalog catalog = AssetDatabase.LoadAssetAtPath<LevelCatalog>(CatalogPath);
 
         Assert.That(catalog, Is.Not.Null);
-        Assert.That(catalog.Levels.Count, Is.EqualTo(5));
+        Assert.That(catalog.Levels.Count, Is.EqualTo(6));
         Assert.That(catalog.Levels[0].LevelId, Is.EqualTo("go-bag-prototype"));
         Assert.That(catalog.Levels[1].LevelId, Is.EqualTo("kitchen-lesson"));
         Assert.That(catalog.Levels[2].LevelId, Is.EqualTo("bedroom-lesson"));
         Assert.That(catalog.Levels[3].LevelId, Is.EqualTo("shelter-lesson"));
         Assert.That(catalog.Levels[4].LevelId, Is.EqualTo("after-the-hurricane-lesson"));
+        Assert.That(catalog.Levels[5].LevelId, Is.EqualTo("garden-view-lesson"));
         Assert.That(catalog.Levels[1].Mode, Is.EqualTo(ModeName.KitchenLesson));
         Assert.That(catalog.Levels[2].Mode, Is.EqualTo(ModeName.ChildrenRoom));
         Assert.That(catalog.Levels[3].Mode, Is.EqualTo(ModeName.Shelter));
         Assert.That(catalog.Levels[4].Mode, Is.EqualTo(ModeName.AfterTheHurricane));
+        Assert.That(catalog.Levels[5].Mode, Is.EqualTo(ModeName.GardenView));
     }
 
     [Test]
@@ -227,6 +229,33 @@ public sealed class RuleSystemTests
             Events.PickBranches,
             Events.PickBottles,
             Events.CutBranches
+        }));
+    }
+
+    [Test]
+    public void GardenViewLesson_UsesGardenEventSequence()
+    {
+        LevelDefinition level = LoadLevel(5);
+        level.RebuildRuntimeData();
+
+        Assert.That(level.RequiredItems, Is.EqualTo(new[]
+        {
+            LessonRuleItem.GardenViewTakeToys,
+            LessonRuleItem.GardenViewTakeBall,
+            LessonRuleItem.GardenViewTakeBicycle
+        }));
+        Assert.That(level.ExpectedRuleIds, Is.EqualTo(new[]
+        {
+            "garden-view-take-toys",
+            "garden-view-take-ball",
+            "garden-view-take-bicycle"
+        }));
+        Assert.That(level.RequiredRuntimeEvents, Is.EqualTo(new[]
+        {
+            Events.HurricaneWarning,
+            Events.GetToys,
+            Events.GetBall,
+            Events.GetBicycle
         }));
     }
 

@@ -12,6 +12,7 @@ public static class LessonDataAssetGenerator
     private const string BedroomPath = LessonFolder + "/BedroomLesson.asset";
     private const string ShelterPath = LessonFolder + "/ShelterLesson.asset";
     private const string AfterTheHurricanePath = LessonFolder + "/AfterTheHurricaneLesson.asset";
+    private const string GardenViewPath = LessonFolder + "/GardenViewLesson.asset";
 
     [MenuItem("Tools/Hurricane/Rebuild Lesson Data Assets")]
     public static void RebuildLessonDataAssets()
@@ -20,7 +21,7 @@ public static class LessonDataAssetGenerator
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
         Selection.activeObject = AssetDatabase.LoadAssetAtPath<LevelCatalog>(CatalogPath);
-        Debug.Log("Lesson ScriptableObject assets rebuilt for Go Bag, Kitchen, Bedroom, Shelter, and After the Hurricane.");
+        Debug.Log("Lesson ScriptableObject assets rebuilt for Go Bag, Kitchen, Bedroom, Shelter, After the Hurricane, and Garden View.");
     }
 
     public static LevelCatalog EnsureLessonDataAssets(bool overwriteExisting = false)
@@ -154,10 +155,34 @@ public static class LessonDataAssetGenerator
             EditorUtility.SetDirty(afterTheHurricane);
         }
 
-        LevelCatalog catalog = LoadOrCreate<LevelCatalog>(CatalogPath);
-        if (overwriteExisting || catalog.Levels.Count != 5)
+        LevelDefinition gardenView = LoadOrCreate<LevelDefinition>(GardenViewPath);
+        if (overwriteExisting || string.IsNullOrEmpty(gardenView.LevelId))
         {
-            catalog.ConfigureEditor(new[] { goBag, kitchen, bedroom, shelter, afterTheHurricane });
+            gardenView.ConfigureEditor(
+                "garden-view-lesson",
+                "Garden View",
+                "The family is outside when the hurricane warning arrives. Choose the safe yard actions before the storm gets close.",
+                "After the warning, take the toys, ball, and bicycle in that order.",
+                ModeName.GardenView,
+                new[]
+                {
+                    LessonRuleItem.GardenViewTakeToys,
+                    LessonRuleItem.GardenViewTakeBall,
+                    LessonRuleItem.GardenViewTakeBicycle
+                },
+                new[]
+                {
+                    LessonRuleItem.GardenViewGoForWalk,
+                    LessonRuleItem.GardenViewPickFlowers
+                },
+                new[] { Events.HurricaneWarning });
+            EditorUtility.SetDirty(gardenView);
+        }
+
+        LevelCatalog catalog = LoadOrCreate<LevelCatalog>(CatalogPath);
+        if (overwriteExisting || catalog.Levels.Count != 6)
+        {
+            catalog.ConfigureEditor(new[] { goBag, kitchen, bedroom, shelter, afterTheHurricane, gardenView });
             EditorUtility.SetDirty(catalog);
         }
         return catalog;

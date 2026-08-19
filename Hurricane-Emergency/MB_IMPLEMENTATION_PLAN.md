@@ -4,7 +4,7 @@ _Purpose: a step-by-step implementation guide for moving the current WebGL-drive
 
 ## Implementation Status
 
-The Unity-native lesson pattern is implemented for `GoBagLesson`, `KitchenLesson`, the player-facing Children Room lesson backed by `ChildrenRoomMode`, plus the direct-launch `Shelter` and `AfterTheHurricane` scenes:
+The Unity-native lesson pattern is implemented for `GoBagLesson`, `KitchenLesson`, the player-facing Children Room lesson backed by `ChildrenRoomMode`, the direct-launch `Shelter` and `AfterTheHurricane` scenes, plus the garden rule sequence in `GardenViewMode`:
 
 - `MainMenu.unity` is build scene 0 and owns lesson selection, briefing, and rule assembly.
 - `SampleScene.unity` is build scene 1 and owns the existing simulation content.
@@ -13,7 +13,7 @@ The Unity-native lesson pattern is implemented for `GoBagLesson`, `KitchenLesson
 - `LevelCatalog.asset` references one editable `LevelDefinition` ScriptableObject per lesson.
 - Each lesson selects its ordered required items and distractors through `LessonRuleItem` enum lists in the Inspector.
 - `LessonLaunchContext` transfers the validated rule ids between scenes locally in Unity.
-- `RuleValidator` blocks invalid or misordered selections for the packing lessons; `Shelter` and `AfterTheHurricane` launch the selected rules directly when the user presses `Check`.
+- `RuleValidator` blocks invalid or misordered selections for the packing lessons; `Shelter`, `AfterTheHurricane`, and `GardenView` launch the selected rules directly when the user presses `Check`.
 - `SimulationEventChannel` and `LevelSessionController` validate runtime events without replacing existing animations.
 - Result, replay, and return-to-menu paths are connected.
 - WebGL callbacks remain available as compatibility output; they are not the source of truth for this flow.
@@ -25,6 +25,7 @@ Current lesson contracts:
 | Go Bag | `GoBagLesson` | water, flashlight, books | `GobagReminder`, `PackWater`, `PackFlashlight`, `PackBook` |
 | Kitchen | `KitchenLesson` | canned food, crackers, water | `GobagReminder`, `PackCannedFood`, `PackCrackers`, `PackWater` |
 | Children Room | `ChildrenRoomMode` / `ModeName.ChildrenRoom` | clothes, water, flashlight, toy | `HurricaneWatch`, `PackClothes`, `PackWater`, `PackFlashlight`, `PackToys` |
+| Garden View | `GardenViewMode` / `ModeName.GardenView` | toys, ball, bicycle | `HurricaneWarning`, `GetToys`, `GetBall`, `GetBicycle` |
 | Shelter | `ShelterMod` / `ModeName.Shelter` | colors a book, plays with toy | `ColorBook`, `PlayToy` |
 | After the Hurricane | `AfterTheHurricane` / `ModeName.AfterTheHurricane` | branches, bottles, cleanup | `PickBranches`, `PickBottles`, `CutBranches` |
 
@@ -40,7 +41,7 @@ Build a Unity-first flow where:
 2. Before the level starts, the player sees the rules and the required steps.
 3. The player assembles or reviews the rules for that level.
 4. The player presses `Check`.
-5. Packing lessons start only after validation passes; `Shelter` and `AfterTheHurricane` launch the selected rules directly.
+5. Packing lessons start only after validation passes; `Shelter`, `AfterTheHurricane`, and `GardenView` launch the selected rules directly.
 6. During gameplay, the system validates correct and incorrect events.
 7. The level ends with feedback and progression to the next level or back to menu.
 8. Existing animations, triggers, timers, and scene mechanics continue to work as they do now.
@@ -96,7 +97,7 @@ Build a Unity-first flow where:
   - short explanation of the expected flow
   - `Check` button
 - The `Check` button should validate the assembled rules against the level definition for packing lessons.
-- `Shelter` and `AfterTheHurricane` should skip the pre-start gate and launch the selected sequence directly so the scene still shows the chosen actions even when the set is imperfect.
+- `Shelter`, `AfterTheHurricane`, and `GardenView` should skip the pre-start gate and launch the selected sequence directly so the scene still shows the chosen actions even when the set is imperfect.
 
 ### Phase 5: Add runtime event validation
 
@@ -182,7 +183,7 @@ Create the following components only as they become necessary. Their first versi
 
 #### `LevelDefinition`
 
-A `ScriptableObject` containing authored data for one lesson. This is implemented for Go Bag, Kitchen, Children Room, Shelter, and After the Hurricane:
+A `ScriptableObject` containing authored data for one lesson. This is implemented for Go Bag, Kitchen, Children Room, Garden View, Shelter, and After the Hurricane:
 
 - stable `levelId`
 - display title and description
@@ -205,7 +206,7 @@ A shared Inspector enum for authored lesson choices. Each value is mapped once b
 - the existing animation enum command
 - the existing completion `Events` value
 
-The current enum contains every selectable item for Go Bag, Kitchen, Children Room, Shelter, and After the Hurricane. Add the items for a new lesson before creating that lesson's `LevelDefinition` asset.
+The current enum contains every selectable item for Go Bag, Kitchen, Children Room, Garden View, Shelter, and After the Hurricane. Add the items for a new lesson before creating that lesson's `LevelDefinition` asset.
 
 #### `RuleDefinition`
 

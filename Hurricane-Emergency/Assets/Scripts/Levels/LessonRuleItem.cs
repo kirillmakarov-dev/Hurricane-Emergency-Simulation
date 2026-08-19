@@ -37,7 +37,14 @@ public enum LessonRuleItem
     [InspectorName("After the Hurricane / Father picks up broken glass")] AfterHurricaneFatherPickBrokenGlass = 28,
     [InspectorName("After the Hurricane / Father picks up electric wires")] AfterHurricaneFatherPickElectricWires = 29,
     [InspectorName("After the Hurricane / Go for a walk")] AfterHurricaneGoForWalk = 30,
-    [InspectorName("After the Hurricane / Mother cuts wood")] AfterHurricaneMotherCutWood = 31
+    [InspectorName("After the Hurricane / Mother cuts wood")] AfterHurricaneMotherCutWood = 31,
+
+    [InspectorName("Garden View / Hurricane warning")] GardenViewHurricaneWarning = 32,
+    [InspectorName("Garden View / Take toys")] GardenViewTakeToys = 33,
+    [InspectorName("Garden View / Take ball")] GardenViewTakeBall = 34,
+    [InspectorName("Garden View / Take bicycle")] GardenViewTakeBicycle = 35,
+    [InspectorName("Garden View / Go for a walk")] GardenViewGoForWalk = 36,
+    [InspectorName("Garden View / Pick flowers")] GardenViewPickFlowers = 37
 }
 
 public readonly struct LessonRuleDescriptor
@@ -187,6 +194,25 @@ public static class LessonRuleItemCatalog
             LessonRuleItem.AfterHurricaneMotherCutWood => Create(
                 "after-hurricane-mother-cut-wood", "Mother cuts wood", "Clear storm debris safely as part of the cleanup.",
                 AfterHurricaneAnimations.MotherCutWood, Events.CutBranches, ModeName.AfterTheHurricane),
+
+            LessonRuleItem.GardenViewHurricaneWarning => Create(
+                "garden-view-hurricane-warning", "Hurricane warning", "The warning should be heard before the yard actions begin.",
+                Animations.HurricaneWatchAnnouncement, Events.HurricaneWarning, ModeName.GardenView),
+            LessonRuleItem.GardenViewTakeToys => Create(
+                "garden-view-take-toys", "Take toys", "Gather outdoor toys before the storm reaches the yard.",
+                Animations.kelanTaketoys, Events.GetToys, ModeName.GardenView),
+            LessonRuleItem.GardenViewTakeBall => Create(
+                "garden-view-take-ball", "Take ball", "Gather the ball before the storm reaches the yard.",
+                Animations.kelanTakeBall, Events.GetBall, ModeName.GardenView),
+            LessonRuleItem.GardenViewTakeBicycle => Create(
+                "garden-view-take-bicycle", "Take bicycle", "Move the bicycle to safety before the storm reaches the yard.",
+                Animations.keyTakesBicycle, Events.GetBicycle, ModeName.GardenView),
+            LessonRuleItem.GardenViewGoForWalk => Create(
+                "garden-view-go-for-walk", "Go for a walk", "Going for a walk is not safe during the warning.",
+                Animations.kelanGoforWalk, Events.Empty, ModeName.GardenView),
+            LessonRuleItem.GardenViewPickFlowers => Create(
+                "garden-view-pick-flowers", "Pick flowers", "Pick flowers is not part of the safety lesson.",
+                Animations.keyPickFlowers, Events.Empty, ModeName.GardenView),
             _ => default
         };
 

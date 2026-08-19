@@ -35,6 +35,7 @@ public class GardenViewMode : MonoBehaviour, ISimulationMode
     private Dictionary<Animations, Action<Action>> keyAnimationMap;
     private AnimationQueueState kelanQueueState;
     private AnimationQueueState keyQueueState;
+    private Coroutine configuredSequenceCoroutine;
     public Animations animationToPlay; // Variable to specify which animation to play
 
     public Action onKyelanAnimationComplete; // Event to signal when an animation is complete
@@ -48,7 +49,29 @@ public class GardenViewMode : MonoBehaviour, ISimulationMode
 
     public void Cleanup()
     {
-        throw new System.NotImplementedException();
+        configuredSequenceCoroutine = null;
+        StopAllCoroutines();
+        if (kelanQueueState != null)
+        {
+            kelanQueueState.Queue.Clear();
+            kelanQueueState.IsPlaying = false;
+        }
+        if (keyQueueState != null)
+        {
+            keyQueueState.Queue.Clear();
+            keyQueueState.IsPlaying = false;
+        }
+
+        timerRun = false;
+        hurricaneWarningTimer = 0f;
+        checkanimation = false;
+        if (momMain != null) momMain.SetActive(false);
+        if (momWateringAnimator != null) momWateringAnimator.SetActive(false);
+        if (kelanAnimator != null) kelanAnimator.gameObject.SetActive(false);
+        if (kelanCanvas != null) kelanCanvas.SetActive(false);
+        if (keyAnimator != null) keyAnimator.gameObject.SetActive(false);
+        if (hurricaneWarning != null) hurricaneWarning.SetActive(false);
+        WaterParticlesEnabled(false);
     }
 
     public void Initialize()
@@ -58,7 +81,8 @@ public class GardenViewMode : MonoBehaviour, ISimulationMode
 
     public void OnSimulationEnd()
     {
-        throw new System.NotImplementedException();
+        timerRun = false;
+        hurricaneWarningTimer = 0f;
     }
 
     public void OnSimulationStart()
@@ -69,6 +93,89 @@ public class GardenViewMode : MonoBehaviour, ISimulationMode
         kelanAnimator.gameObject.SetActive(false);
         kelanCanvas.SetActive(false);
         keyAnimator.gameObject.SetActive(false);
+    }
+
+    public void PlayConfiguredSequence(IReadOnlyList<string> animationNames)
+    {
+        if (animationNames == null || animationNames.Count == 0)
+        {
+            Debug.LogWarning("PlayConfiguredSequence requires at least one garden view animation.");
+            return;
+        }
+
+        StopAllCoroutines();
+        if (kelanQueueState != null)
+        {
+            kelanQueueState.Queue.Clear();
+            kelanQueueState.IsPlaying = false;
+        }
+        if (keyQueueState != null)
+        {
+            keyQueueState.Queue.Clear();
+            keyQueueState.IsPlaying = false;
+        }
+
+        timerRun = false;
+        hurricaneWarningTimer = 0f;
+        checkanimation = false;
+
+        configuredSequenceCoroutine = StartCoroutine(PlayConfiguredSequenceCoroutine(animationNames));
+    }
+
+    private IEnumerator PlayConfiguredSequenceCoroutine(IReadOnlyList<string> animationNames)
+    {
+        yield return PlayConfiguredAnimation(Animations.HurricaneWatchAnnouncement);
+
+        for (int i = 0; i < animationNames.Count; i++)
+        {
+            if (!Enum.TryParse(animationNames[i], true, out Animations animation) ||
+                !Enum.IsDefined(typeof(Animations), animation))
+            {
+                Debug.LogWarning($"Unknown garden view animation: {animationNames[i]}");
+                continue;
+            }
+
+            if (animation == Animations.HurricaneWatchAnnouncement)
+            {
+                continue;
+            }
+
+            yield return PlayConfiguredAnimation(animation);
+        }
+
+        configuredSequenceCoroutine = null;
+    }
+
+    private IEnumerator PlayConfiguredAnimation(Animations animation)
+    {
+        bool finished = false;
+        switch (animation)
+        {
+            case Animations.HurricaneWatchAnnouncement:
+                HurricaneWarningAnnouncement();
+                yield return new WaitForSeconds(3.1f);
+                yield break;
+            case Animations.kelanTakeBall:
+                KelanTakesBall(() => finished = true);
+                break;
+            case Animations.kelanGoforWalk:
+                KelanGoForWalk(() => finished = true);
+                break;
+            case Animations.kelanTaketoys:
+                KelanTakesToys(() => finished = true);
+                break;
+            case Animations.keyPickFlowers:
+                KeyPickFlowers(() => finished = true);
+                break;
+            case Animations.keyTakesBicycle:
+                KeyTakesBicycle(() => finished = true);
+                break;
+            default:
+                Debug.LogWarning("Unsupported configured garden animation: " + animation);
+                yield break;
+        }
+
+        yield return new WaitUntil(() => finished);
     }
 
 

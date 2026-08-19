@@ -1,6 +1,6 @@
 # Hurricane Emergency Simulation: Current Architecture
 
-_Current checkout snapshot: 2026-08-20_
+_Current checkout snapshot: 2026-08-19_
 
 ## Document Role
 
@@ -35,7 +35,7 @@ Recovery scenes and the URP template are not runtime levels.
 
 ## Runtime Model
 
-Unity now owns three complete lesson flows: Go Bag, Kitchen, and Bedroom. `MainMenu.unity` contains the persistent menu entry objects (`GameFlowController`, a `GameFlowUI.prefab` instance, camera, and `EventSystem`). The prefab contains the lesson selection, briefing, rule-builder, gameplay HUD, and result screens. `GameFlowController` only changes screen state, binds events, and supplies data to those serialized views.
+Unity now owns four complete lesson flows: Go Bag, Kitchen, Bedroom, and Garden View. `MainMenu.unity` contains the persistent menu entry objects (`GameFlowController`, a `GameFlowUI.prefab` instance, camera, and `EventSystem`). The prefab contains the lesson selection, briefing, rule-builder, gameplay HUD, and result screens. `GameFlowController` only changes screen state, binds events, and supplies data to those serialized views.
 
 After a valid `Check`, `LessonLaunchContext` stores the selected level id and rule ids in order and loads `SampleScene.unity`. The gameplay scene restores that selection, starts `GoBagLesson`, `KitchenLesson`, or `ChildrenRoomMode` through `SimulationManager`, listens to `SimulationEventChannel`, displays runtime feedback, and shows the result screen. The existing mode scripts and animation controllers remain responsible for visual behavior. The player-facing Bedroom lesson intentionally maps to the existing `ModeName.ChildrenRoom` mode and `Children room` scene root.
 
@@ -71,10 +71,11 @@ Current authored lesson data:
 | `Assets/Data/Lessons/GoBagLesson.asset` | Go Bag copy, mode, required enum items, distractors, and opening events |
 | `Assets/Data/Lessons/KitchenLesson.asset` | Kitchen copy, mode, required enum items, distractors, and opening events |
 | `Assets/Data/Lessons/BedroomLesson.asset` | Bedroom copy, mode, required enum items, distractors, and opening events |
+| `Assets/Data/Lessons/GardenViewLesson.asset` | Garden View copy, mode, required enum items, distractors, and opening events |
 
 `LevelDefinition` does not serialize animation command strings or duplicate runtime rule records. Designers choose the correct ordered items and distractors through `LessonRuleItem` enum lists. `LessonRuleItemCatalog` maps each enum value to the existing mode command, stable rule id, label, and completion event. A mode mismatch or duplicate item is reported as a configuration error.
 
-`Tools/Hurricane/Rebuild Lesson Data Assets` intentionally restores the three lesson assets to project defaults. Normal edits are made directly in the assets. Rebuilding Game Flow UI only creates missing lesson assets and does not overwrite existing lesson configuration.
+`Tools/Hurricane/Rebuild Lesson Data Assets` intentionally restores the lesson assets to project defaults. Normal edits are made directly in the assets. Rebuilding Game Flow UI only creates missing lesson assets and does not overwrite existing lesson configuration.
 
 ```text
 MainMenu.unity rule selection or legacy WebGL command
@@ -145,7 +146,7 @@ void OnSimulationEnd();
 void Cleanup();
 ```
 
-The lifecycle is only partially implemented across modes. Several `Cleanup()` methods only log or are empty, and `GardenViewMode.Cleanup()` currently throws `NotImplementedException`.
+The lifecycle is only partially implemented across modes. Several `Cleanup()` methods only log or are empty, but `GardenViewMode.Cleanup()` now clears its timers, queues, and scene state so mode transitions do not throw.
 
 ### `GameModeFactory`
 
@@ -346,7 +347,7 @@ Command entry points:
 
 Known outbound events are distributed between this mode, `GardenTakesObjects`, and `AnimationEvent`: `HurricaneWarning`, `CoverWindow`, `GetBicycle`, `GetToys`, and `GetBall`.
 
-Current blocker: both `Cleanup()` and `OnSimulationEnd()` throw `NotImplementedException`. Switching away from this mode calls `Cleanup()` and can break the new menu/progression flow.
+Current state: `Cleanup()` now clears queues, timers, and scene state instead of throwing, and `OnSimulationEnd()` resets timer-related state so switching away from this mode is safe for the new menu/progression flow.
 
 ### `Shelter`
 
@@ -572,7 +573,7 @@ These are facts to account for during implementation, not a request to refactor 
 4. Outbound events are emitted from multiple layers: modes, animation event receivers, and object-swap helpers.
 5. Event coverage is incomplete; several selectable actions emit `Events.Empty`.
 6. Most mode cleanup methods do not fully reset queues, coroutines, timers, held objects, or Animator state.
-7. `GardenViewMode.Cleanup()` can throw during a normal mode transition.
+7. `GardenViewMode.Cleanup()` now performs a safe reset during a normal mode transition.
 8. `EntryScreenMod` remains unused; the Unity-native menu is owned by `MainMenu.unity` and `GameFlowController`.
 9. `LevelCatalog.asset` and its referenced `LevelDefinition` assets are the source of truth for Go Bag, Kitchen, and Bedroom objectives, accepted enum items, distractors, and runtime event order; remaining modes are not authored yet.
 10. `SimulationEventChannel` exposes completed gameplay actions to the active Unity lesson session while preserving WebGL output.

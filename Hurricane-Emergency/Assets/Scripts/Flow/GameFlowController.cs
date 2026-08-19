@@ -224,6 +224,11 @@ public sealed class GameFlowController : MonoBehaviour
                 if (afterTheHurricane == null) return false;
                 afterTheHurricane.PlayConfiguredSequence(commands);
                 return true;
+            case ModeName.GardenView:
+                GardenViewMode gardenView = SimulationManager.Instance.GetMode<GardenViewMode>();
+                if (gardenView == null) return false;
+                gardenView.PlayConfiguredSequence(commands);
+                return true;
             default:
                 return false;
         }
@@ -406,6 +411,10 @@ public sealed class GameFlowController : MonoBehaviour
         Events.GobagReminder => "Parents' reminder",
         Events.ColorBook => "Color book",
         Events.PlayToy => "Play with toy",
+        Events.HurricaneWarning => "Hurricane warning",
+        Events.GetBicycle => "Bicycle",
+        Events.GetToys => "Toys",
+        Events.GetBall => "Ball",
         Events.PickBranches => "Pick up branches",
         Events.PickBottles => "Pick up bottles",
         Events.PickGlass => "Pick up broken glass",
@@ -423,7 +432,7 @@ public sealed class GameFlowController : MonoBehaviour
 
     private static bool ShouldBypassRuleValidation(ModeName mode)
     {
-        return mode == ModeName.Shelter || mode == ModeName.AfterTheHurricane;
+        return mode == ModeName.Shelter || mode == ModeName.AfterTheHurricane || mode == ModeName.GardenView;
     }
 
     private static Color Hex(string value)
