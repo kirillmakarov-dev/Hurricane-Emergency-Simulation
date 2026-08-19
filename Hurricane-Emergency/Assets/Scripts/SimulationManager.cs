@@ -14,6 +14,7 @@ public class SimulationManager : Singelton<SimulationManager>
     private GameModeFactory modeFactory;
 
     private ISimulationMode activeGameMode;
+    private ModeName lastEditorMode;
 
     public ModeName newMode;
     public ModeName CurrentMode { get; private set; }
@@ -26,6 +27,7 @@ public class SimulationManager : Singelton<SimulationManager>
         base.Awake();
         modeFactory = new GameModeFactory();
         InitializeGameModes();
+        lastEditorMode = newMode;
         InitSimulation();
     }
     void Start()
@@ -64,8 +66,9 @@ public class SimulationManager : Singelton<SimulationManager>
     {
         if (Application.isEditor)
         {
-            if (CurrentMode != newMode)
+            if (lastEditorMode != newMode)
             {
+                lastEditorMode = newMode;
                 SwitchMode(newMode);
             }
         }
@@ -88,6 +91,8 @@ public class SimulationManager : Singelton<SimulationManager>
 
         PreviousMode = CurrentMode;
         CurrentMode = newMode;
+        this.newMode = newMode;
+        lastEditorMode = newMode;
 
         activeGameMode = modeFactory.GetMode(newMode, gameObject);
 

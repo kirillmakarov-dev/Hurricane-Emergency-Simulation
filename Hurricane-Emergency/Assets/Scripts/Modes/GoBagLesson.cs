@@ -50,6 +50,8 @@ public class GoBagLesson : MonoBehaviour, ISimulationMode
     private Vector3 bagPositionLeft = new Vector3(2.5f, -2f, 0f); // Position of the bag
 
     private Coroutine kelenCoroutine;
+    private Coroutine configuredSequenceCoroutine;
+    private bool keyBagSequenceComplete;
 
     private readonly Queue<GaBagAnimations> animationQueue = new();
     private bool isPlaying;
@@ -169,10 +171,10 @@ public class GoBagLesson : MonoBehaviour, ISimulationMode
 
     public void DadEnterTheRoom()
     {
-        StartCoroutine(DadEnterRoomCoroutine());
+        StartCoroutine(DadEnterRoomCoroutine(false));
     }
 
-    IEnumerator DadEnterRoomCoroutine()
+    IEnumerator DadEnterRoomCoroutine(bool waitForBag)
     {
         bool flipX = true; // Set to true to flip the character when moving left
         dadAnimator.SetTrigger("Walk");
@@ -186,6 +188,44 @@ public class GoBagLesson : MonoBehaviour, ISimulationMode
         yield return MoveToTarget(dad.transform, new Vector3(-11f, -2f, 0f), 2f, flipX);
         dadAnimator.SetTrigger("Idle");
 
+        if (waitForBag)
+        {
+            yield return new WaitUntil(() => keyBagSequenceComplete);
+        }
+
+    }
+
+    public void PlayConfiguredSequence(IReadOnlyList<string> animationNames)
+    {
+        if (animationNames == null || animationNames.Count == 0)
+        {
+            Debug.LogWarning("PlayConfiguredSequence requires at least one animation.");
+            return;
+        }
+
+        StopAllCoroutines();
+        animationQueue.Clear();
+        isPlaying = false;
+        currentAnimationFinished = false;
+        playAnimation = false;
+        simulationStart = false;
+        kelenCoroutine = null;
+        keyBagSequenceComplete = false;
+        kelenAnimator.SetTrigger("Idle");
+
+        configuredSequenceCoroutine = StartCoroutine(PlayConfiguredSequenceCoroutine(animationNames));
+    }
+
+    private IEnumerator PlayConfiguredSequenceCoroutine(IReadOnlyList<string> animationNames)
+    {
+        yield return DadEnterRoomCoroutine(true);
+
+        for (int i = 0; i < animationNames.Count; i++)
+        {
+            AddGoBagAnimationFromWeb(animationNames[i]);
+        }
+
+        configuredSequenceCoroutine = null;
     }
 
     public void OnGivesReminder() //Called from WebGL when dad gives reminder to kelen
@@ -241,6 +281,14 @@ public class GoBagLesson : MonoBehaviour, ISimulationMode
     public void Cleanup()
     {
         Debug.Log("Cleanup ChildrenRoom mode");
+        playAnimation = false;
+        simulationStart = false;
+        animationQueue.Clear();
+        isPlaying = false;
+        currentAnimationFinished = false;
+        kelenCoroutine = null;
+        configuredSequenceCoroutine = null;
+        StopAllCoroutines();
     }
 
 
@@ -356,7 +404,14 @@ public class GoBagLesson : MonoBehaviour, ISimulationMode
 
     public void KeyTakeBag()
     {
-        StartCoroutine(KeyWalkToBag(key, new Vector3(1.33f, -1.33f, 0f), 2f));
+        keyBagSequenceComplete = false;
+        StartCoroutine(KeyTakeBagCoroutine());
+    }
+
+    private IEnumerator KeyTakeBagCoroutine()
+    {
+        yield return KeyWalkToBag(key, new Vector3(1.33f, -1.33f, 0f), 2f);
+        keyBagSequenceComplete = true;
     }
 
     public void KelanPlay()

@@ -5,11 +5,21 @@ using UnityEngine;
 
 public static class WebGLBridge
 {
+    public static void SendEvent(string eventName)
+    {
+        SimulationEventChannel.Raise(eventName);
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+        SendEventInternal(eventName);
+#else
+        Debug.Log("SendEvent called with eventName: " + eventName + " - not in WebGL build, so no action taken.");
+#endif
+    }
 
 #if UNITY_WEBGL && !UNITY_EDITOR
     [DllImport("__Internal")] public static extern void CallINITfunction();// Declaration of the external JavaScript function
     [DllImport("__Internal")] public static extern void OnResetDone();
-    [DllImport("__Internal")] public static extern void SendEvent(string eventName);
+    [DllImport("__Internal", EntryPoint = "SendEvent")] private static extern void SendEventInternal(string eventName);
     [DllImport("__Internal")] public static extern void OnJuneArrives(int juneID);
     [DllImport("__Internal")] public static extern void OnMayArrives(int mayID);
     [DllImport("__Internal")] public static extern void OnInShelter(int kayID);
@@ -29,10 +39,6 @@ public static class WebGLBridge
     public static void OnResetDone()
     {
         Debug.Log("OnResetDone called - not in WebGL build, so no action taken.");
-    }
-    public static void SendEvent(string eventName)
-    {
-        Debug.Log("SendEvent called with eventName: " + eventName + " - not in WebGL build, so no action taken.");
     }
     public static void OnJuneArrives(int juneID)
     {
