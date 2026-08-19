@@ -23,7 +23,21 @@ public enum LessonRuleItem
     [InspectorName("Bedroom / Toy")] BedroomToy = 16,
     [InspectorName("Bedroom / Fruit")] BedroomFruit = 17,
     [InspectorName("Bedroom / Lamp")] BedroomLamp = 18,
-    [InspectorName("Bedroom / Aquarium")] BedroomAquarium = 19
+    [InspectorName("Bedroom / Aquarium")] BedroomAquarium = 19,
+
+    [InspectorName("Shelter / Colours a book")] ShelterColoursABook = 20,
+    [InspectorName("Shelter / Plays with toy")] ShelterPlaysWithToy = 21,
+    [InspectorName("Shelter / Plays outside")] ShelterPlaysOutside = 22,
+    [InspectorName("Shelter / Talks to a stranger")] ShelterTalksToAStranger = 23,
+
+    [InspectorName("After the Hurricane / Pick up branches")] AfterHurricanePickBranches = 24,
+    [InspectorName("After the Hurricane / Pick up bottles")] AfterHurricanePickBottles = 25,
+    [InspectorName("After the Hurricane / Pick up broken glass")] AfterHurricanePickBrokenGlass = 26,
+    [InspectorName("After the Hurricane / Pick up electric wires")] AfterHurricanePickElectricWires = 27,
+    [InspectorName("After the Hurricane / Father picks up broken glass")] AfterHurricaneFatherPickBrokenGlass = 28,
+    [InspectorName("After the Hurricane / Father picks up electric wires")] AfterHurricaneFatherPickElectricWires = 29,
+    [InspectorName("After the Hurricane / Go for a walk")] AfterHurricaneGoForWalk = 30,
+    [InspectorName("After the Hurricane / Mother cuts wood")] AfterHurricaneMotherCutWood = 31
 }
 
 public readonly struct LessonRuleDescriptor
@@ -135,6 +149,44 @@ public static class LessonRuleItemCatalog
             LessonRuleItem.BedroomAquarium => Create(
                 "bedroom-aquarium", "Pack the aquarium", "This item is not required for the bedroom lesson.",
                 Animations.KelenTakeAquarium, Events.Empty, ModeName.ChildrenRoom),
+
+            LessonRuleItem.ShelterColoursABook => Create(
+                "shelter-colours-a-book", "Colour a book", "Keep Kay calm with a quiet indoor activity while waiting in shelter.",
+                ShelterMod.ShelterAnimations.ColoursABook, Events.ColorBook, ModeName.Shelter),
+            LessonRuleItem.ShelterPlaysWithToy => Create(
+                "shelter-plays-with-toy", "Play with a toy", "A simple toy is a safe shelter activity.",
+                ShelterMod.ShelterAnimations.PlaysWithToy, Events.PlayToy, ModeName.Shelter),
+            LessonRuleItem.ShelterPlaysOutside => Create(
+                "shelter-plays-outside", "Play outside", "Going outside is not safe while sheltering.",
+                ShelterMod.ShelterAnimations.PlaysOutside, Events.Empty, ModeName.Shelter),
+            LessonRuleItem.ShelterTalksToAStranger => Create(
+                "shelter-talks-to-a-stranger", "Talk to a stranger", "Do not leave shelter to talk to strangers.",
+                ShelterMod.ShelterAnimations.TalksToAStranger, Events.Empty, ModeName.Shelter),
+
+            LessonRuleItem.AfterHurricanePickBranches => Create(
+                "after-hurricane-pick-branches", "Pick up branches", "Clear safe debris from the yard after the storm.",
+                AfterHurricaneAnimations.picksUpBranches, Events.PickBranches, ModeName.AfterTheHurricane),
+            LessonRuleItem.AfterHurricanePickBottles => Create(
+                "after-hurricane-pick-bottles", "Pick up bottles", "Collect safe debris from the yard after the storm.",
+                AfterHurricaneAnimations.picksUpBottles, Events.PickBottles, ModeName.AfterTheHurricane),
+            LessonRuleItem.AfterHurricanePickBrokenGlass => Create(
+                "after-hurricane-pick-broken-glass", "Pick up broken glass", "Broken glass is unsafe and should not be handled by the child.",
+                AfterHurricaneAnimations.picksUpBrockenGlass, Events.PickGlass, ModeName.AfterTheHurricane),
+            LessonRuleItem.AfterHurricanePickElectricWires => Create(
+                "after-hurricane-pick-electric-wires", "Pick up electric wires", "Electric wires are unsafe and must be avoided.",
+                AfterHurricaneAnimations.picksUpElectricWires, Events.Empty, ModeName.AfterTheHurricane),
+            LessonRuleItem.AfterHurricaneFatherPickBrokenGlass => Create(
+                "after-hurricane-father-pick-broken-glass", "Father picks up broken glass", "An adult can clear broken glass carefully if the lesson calls for it.",
+                AfterHurricaneAnimations.FatherPicksUpBrockenGlass, Events.PickGlass, ModeName.AfterTheHurricane),
+            LessonRuleItem.AfterHurricaneFatherPickElectricWires => Create(
+                "after-hurricane-father-pick-electric-wires", "Father picks up electric wires", "Electric wires are unsafe and must be avoided.",
+                AfterHurricaneAnimations.FatherPicksUpElectricWires, Events.Empty, ModeName.AfterTheHurricane),
+            LessonRuleItem.AfterHurricaneGoForWalk => Create(
+                "after-hurricane-go-for-walk", "Go for a walk", "This is not part of the cleanup lesson.",
+                AfterHurricaneAnimations.GoForWalk, Events.Empty, ModeName.AfterTheHurricane),
+            LessonRuleItem.AfterHurricaneMotherCutWood => Create(
+                "after-hurricane-mother-cut-wood", "Mother cuts wood", "Clear storm debris safely as part of the cleanup.",
+                AfterHurricaneAnimations.MotherCutWood, Events.CutBranches, ModeName.AfterTheHurricane),
             _ => default
         };
 

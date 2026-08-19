@@ -367,6 +367,8 @@ Known outbound events:
 - `PlayToy`
 - browser-specific `OnInShelter(kayId)` timer callback.
 
+The `GameFlowController` can launch any selected shelter animations directly after the user presses `Check`; the scene is not blocked by a pre-start rule validator for this mode. The `LevelDefinition` asset still defines the mandatory shelter actions, while the scene reproduces whatever was selected in the rule builder.
+
 There are no shared `Events` values for playing outside or talking to a stranger.
 
 ### `AfterTheHurricane`
@@ -394,6 +396,8 @@ Known outbound events:
 - `CutBranches`
 - `AllClear`
 - browser-specific `AllClear(allClearId)` timer callback.
+
+The `GameFlowController` launches the selected cleanup actions directly for this mode as well, so wrong selections still reproduce in the scene. The `LevelDefinition` asset defines which cleanup actions are mandatory for runtime checking.
 
 Not every queue command currently produces a distinct shared event.
 

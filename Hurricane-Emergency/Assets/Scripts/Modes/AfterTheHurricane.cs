@@ -77,15 +77,24 @@ public class AfterTheHurricane : MonoBehaviour, ISimulationMode
     private bool isPlaying;
     private bool currentAnimationFinished;
     private AfterHurricaneAnimations? currentQueuedAnimation;
+    private Coroutine configuredSequenceCoroutine;
 
     private Dictionary<AfterHurricaneAnimations, Action<Action>> animationMap;
 
     public void Cleanup()
     {
         // cleanup after the hurricane mode state
+        configuredSequenceCoroutine = null;
+        StopAllCoroutines();
+        animationQueue.Clear();
+        isPlaying = false;
+        currentAnimationFinished = false;
+        currentQueuedAnimation = null;
+        simulationStart = false;
         if (fatherAnimator != null) fatherAnimator.gameObject.SetActive(false);
         if (kelanAnimator != null) kelanAnimator.gameObject.SetActive(false);
         if (motherAnimator != null) motherAnimator.gameObject.SetActive(false);
+        if (motherCanvas != null) motherCanvas.SetActive(false);
     }
     private void Update()
     {
@@ -133,6 +142,41 @@ public class AfterTheHurricane : MonoBehaviour, ISimulationMode
             // AfterHurricaneQueueAnimation("FatherPicksUpBrockenGlass");
             // AfterHurricaneQueueAnimation("FatherPicksUpElectricWires");
         }
+    }
+
+    public void PlayConfiguredSequence(IReadOnlyList<string> animationNames)
+    {
+        if (animationNames == null)
+        {
+            Debug.LogWarning("PlayConfiguredSequence requires an after the hurricane animation list.");
+            return;
+        }
+
+        StopAllCoroutines();
+        animationQueue.Clear();
+        isPlaying = false;
+        currentAnimationFinished = false;
+        currentQueuedAnimation = null;
+        simulationStart = false;
+
+        if (fatherAnimator != null) fatherAnimator.gameObject.SetActive(true);
+        if (kelanAnimator != null) kelanAnimator.gameObject.SetActive(true);
+        if (motherAnimator != null) motherAnimator.gameObject.SetActive(true);
+        if (motherCanvas != null) motherCanvas.SetActive(false);
+        if (allClear != null) allClear.SetActive(false);
+
+        configuredSequenceCoroutine = StartCoroutine(PlayConfiguredSequenceCoroutine(animationNames));
+    }
+
+    private IEnumerator PlayConfiguredSequenceCoroutine(IReadOnlyList<string> animationNames)
+    {
+        for (int i = 0; i < animationNames.Count; i++)
+        {
+            AfterHurricaneQueueAnimation(animationNames[i]);
+        }
+
+        configuredSequenceCoroutine = null;
+        yield break;
     }
 
     public void AllClearAnimation()

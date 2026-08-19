@@ -10,6 +10,8 @@ public static class LessonDataAssetGenerator
     private const string GoBagPath = LessonFolder + "/GoBagLesson.asset";
     private const string KitchenPath = LessonFolder + "/KitchenLesson.asset";
     private const string BedroomPath = LessonFolder + "/BedroomLesson.asset";
+    private const string ShelterPath = LessonFolder + "/ShelterLesson.asset";
+    private const string AfterTheHurricanePath = LessonFolder + "/AfterTheHurricaneLesson.asset";
 
     [MenuItem("Tools/Hurricane/Rebuild Lesson Data Assets")]
     public static void RebuildLessonDataAssets()
@@ -18,7 +20,7 @@ public static class LessonDataAssetGenerator
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
         Selection.activeObject = AssetDatabase.LoadAssetAtPath<LevelCatalog>(CatalogPath);
-        Debug.Log("Lesson ScriptableObject assets rebuilt for Go Bag, Kitchen, and Bedroom.");
+        Debug.Log("Lesson ScriptableObject assets rebuilt for Go Bag, Kitchen, Bedroom, Shelter, and After the Hurricane.");
     }
 
     public static LevelCatalog EnsureLessonDataAssets(bool overwriteExisting = false)
@@ -102,10 +104,60 @@ public static class LessonDataAssetGenerator
             EditorUtility.SetDirty(bedroom);
         }
 
-        LevelCatalog catalog = LoadOrCreate<LevelCatalog>(CatalogPath);
-        if (overwriteExisting || catalog.Levels.Count == 0)
+        LevelDefinition shelter = LoadOrCreate<LevelDefinition>(ShelterPath);
+        if (overwriteExisting || string.IsNullOrEmpty(shelter.LevelId))
         {
-            catalog.ConfigureEditor(new[] { goBag, kitchen, bedroom });
+            shelter.ConfigureEditor(
+                "shelter-lesson",
+                "Shelter",
+                "Kay is staying in shelter while the storm passes. Choose the calm, safe actions that belong in this scene.",
+                "Select the shelter actions in order, then press Check to launch the scene.",
+                ModeName.Shelter,
+                new[]
+                {
+                    LessonRuleItem.ShelterColoursABook,
+                    LessonRuleItem.ShelterPlaysWithToy
+                },
+                new[]
+                {
+                    LessonRuleItem.ShelterPlaysOutside,
+                    LessonRuleItem.ShelterTalksToAStranger
+                },
+                System.Array.Empty<Events>());
+            EditorUtility.SetDirty(shelter);
+        }
+
+        LevelDefinition afterTheHurricane = LoadOrCreate<LevelDefinition>(AfterTheHurricanePath);
+        if (overwriteExisting || string.IsNullOrEmpty(afterTheHurricane.LevelId))
+        {
+            afterTheHurricane.ConfigureEditor(
+                "after-the-hurricane-lesson",
+                "After the Hurricane",
+                "The storm has passed and the family is cleaning up the yard. Choose only the safe cleanup actions.",
+                "Select the cleanup actions in order, then press Check to launch the scene.",
+                ModeName.AfterTheHurricane,
+                new[]
+                {
+                    LessonRuleItem.AfterHurricanePickBranches,
+                    LessonRuleItem.AfterHurricanePickBottles,
+                    LessonRuleItem.AfterHurricaneMotherCutWood
+                },
+                new[]
+                {
+                    LessonRuleItem.AfterHurricanePickBrokenGlass,
+                    LessonRuleItem.AfterHurricanePickElectricWires,
+                    LessonRuleItem.AfterHurricaneFatherPickBrokenGlass,
+                    LessonRuleItem.AfterHurricaneFatherPickElectricWires,
+                    LessonRuleItem.AfterHurricaneGoForWalk
+                },
+                System.Array.Empty<Events>());
+            EditorUtility.SetDirty(afterTheHurricane);
+        }
+
+        LevelCatalog catalog = LoadOrCreate<LevelCatalog>(CatalogPath);
+        if (overwriteExisting || catalog.Levels.Count != 5)
+        {
+            catalog.ConfigureEditor(new[] { goBag, kitchen, bedroom, shelter, afterTheHurricane });
             EditorUtility.SetDirty(catalog);
         }
         return catalog;

@@ -148,6 +148,15 @@ public sealed class GameFlowController : MonoBehaviour
 
     private void CheckRules()
     {
+        if (level == null) return;
+        if (ShouldBypassRuleValidation(level.Mode))
+        {
+            view.RuleFeedbackText.text = "Selected rules will be launched directly in this scene.";
+            view.RuleFeedbackText.color = Success;
+            StartCoroutine(StartGameplayAfterConfirmation());
+            return;
+        }
+
         RuleValidationResult result = RuleValidator.Validate(selectedRules, level.ExpectedRuleIds);
         view.RuleFeedbackText.text = result.Message;
         view.RuleFeedbackText.color = result.IsValid ? Success : Warning;
@@ -166,7 +175,7 @@ public sealed class GameFlowController : MonoBehaviour
         state = GameFlowState.Playing;
         mistakes = 0;
         view.ProgressText.text = $"0 / {level.RequiredRuntimeEvents.Count} steps complete";
-        view.GameplayFeedbackText.text = "The family is getting ready...";
+        view.GameplayFeedbackText.text = "The lesson is getting ready...";
         view.GameplayFeedbackText.color = Cream;
         view.ShowGameplay();
 
@@ -205,6 +214,16 @@ public sealed class GameFlowController : MonoBehaviour
                 if (bedroom == null) return false;
                 bedroom.PlayConfiguredSequence(commands);
                 return true;
+            case ModeName.Shelter:
+                ShelterMod shelter = SimulationManager.Instance.GetMode<ShelterMod>();
+                if (shelter == null) return false;
+                shelter.PlayConfiguredSequence(commands);
+                return true;
+            case ModeName.AfterTheHurricane:
+                AfterTheHurricane afterTheHurricane = SimulationManager.Instance.GetMode<AfterTheHurricane>();
+                if (afterTheHurricane == null) return false;
+                afterTheHurricane.PlayConfiguredSequence(commands);
+                return true;
             default:
                 return false;
         }
@@ -228,6 +247,10 @@ public sealed class GameFlowController : MonoBehaviour
             if (match == null) return false;
             selectedRules.Add(match);
         }
+        if (ShouldBypassRuleValidation(level.Mode))
+        {
+            return true;
+        }
         return RuleValidator.Validate(selectedRules, level.ExpectedRuleIds).IsValid;
     }
 
@@ -247,12 +270,12 @@ public sealed class GameFlowController : MonoBehaviour
                 break;
             case RuntimeStepResultType.Incorrect:
                 mistakes++;
-                view.GameplayFeedbackText.text = "That item does not belong in this emergency bag.";
+                view.GameplayFeedbackText.text = "That action is not part of this lesson.";
                 view.GameplayFeedbackText.color = Coral;
                 break;
             case RuntimeStepResultType.OutOfOrder:
                 mistakes++;
-                view.GameplayFeedbackText.text = "Correct item, but this action happened out of order.";
+                view.GameplayFeedbackText.text = "Correct action, but it happened out of order.";
                 view.GameplayFeedbackText.color = Coral;
                 break;
             case RuntimeStepResultType.Duplicate:
@@ -381,6 +404,12 @@ public sealed class GameFlowController : MonoBehaviour
     private static string FriendlyEventName(Events eventType) => eventType switch
     {
         Events.GobagReminder => "Parents' reminder",
+        Events.ColorBook => "Color book",
+        Events.PlayToy => "Play with toy",
+        Events.PickBranches => "Pick up branches",
+        Events.PickBottles => "Pick up bottles",
+        Events.PickGlass => "Pick up broken glass",
+        Events.CutBranches => "Cut wood",
         Events.PackWater => "Water",
         Events.PackFlashlight => "Flashlight",
         Events.PackBook => "Books",
@@ -391,6 +420,11 @@ public sealed class GameFlowController : MonoBehaviour
         Events.PackToys => "Toy",
         _ => eventType.ToString()
     };
+
+    private static bool ShouldBypassRuleValidation(ModeName mode)
+    {
+        return mode == ModeName.Shelter || mode == ModeName.AfterTheHurricane;
+    }
 
     private static Color Hex(string value)
     {

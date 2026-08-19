@@ -23,14 +23,23 @@ public class ShelterMod : MonoBehaviour, ISimulationMode
     private bool isPlaying;
     private bool currentAnimationFinished;
     private ShelterAnimations? currentQueuedAnimation;
+    private Coroutine configuredSequenceCoroutine;
 
     private System.Collections.Generic.Dictionary<ShelterAnimations, Action<Action>> animationMap;
 
     public void Cleanup()
     {
         // cleanup shelter mode state
+        configuredSequenceCoroutine = null;
+        StopAllCoroutines();
+        animationQueue.Clear();
+        isPlaying = false;
+        currentAnimationFinished = false;
+        currentQueuedAnimation = null;
+        simulationStart = false;
         if (kayakAnimator != null) kayakAnimator.gameObject.SetActive(false);
         if (strangerAnimator != null) strangerAnimator.gameObject.SetActive(false);
+        if (talkAnimator != null) talkAnimator.gameObject.SetActive(false);
     }
     private void Update()
     {
@@ -74,6 +83,39 @@ public class ShelterMod : MonoBehaviour, ISimulationMode
     {
         simulationStart = true;
 
+    }
+
+    public void PlayConfiguredSequence(System.Collections.Generic.IReadOnlyList<string> animationNames)
+    {
+        if (animationNames == null)
+        {
+            Debug.LogWarning("PlayConfiguredSequence requires a shelter animation list.");
+            return;
+        }
+
+        StopAllCoroutines();
+        animationQueue.Clear();
+        isPlaying = false;
+        currentAnimationFinished = false;
+        currentQueuedAnimation = null;
+        simulationStart = false;
+
+        if (kayakAnimator != null) kayakAnimator.gameObject.SetActive(true);
+        if (strangerAnimator != null) strangerAnimator.gameObject.SetActive(false);
+        if (talkAnimator != null) talkAnimator.gameObject.SetActive(false);
+
+        configuredSequenceCoroutine = StartCoroutine(PlayConfiguredSequenceCoroutine(animationNames));
+    }
+
+    private IEnumerator PlayConfiguredSequenceCoroutine(System.Collections.Generic.IReadOnlyList<string> animationNames)
+    {
+        for (int i = 0; i < animationNames.Count; i++)
+        {
+            ShelterQueueAnimation(animationNames[i]);
+        }
+
+        configuredSequenceCoroutine = null;
+        yield break;
     }
 
 

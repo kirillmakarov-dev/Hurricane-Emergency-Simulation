@@ -107,17 +107,21 @@ public sealed class RuleSystemTests
     }
 
     [Test]
-    public void ScriptableObjectCatalog_ContainsAllThreeLessons()
+    public void ScriptableObjectCatalog_ContainsAllFiveLessons()
     {
         LevelCatalog catalog = AssetDatabase.LoadAssetAtPath<LevelCatalog>(CatalogPath);
 
         Assert.That(catalog, Is.Not.Null);
-        Assert.That(catalog.Levels.Count, Is.EqualTo(3));
+        Assert.That(catalog.Levels.Count, Is.EqualTo(5));
         Assert.That(catalog.Levels[0].LevelId, Is.EqualTo("go-bag-prototype"));
         Assert.That(catalog.Levels[1].LevelId, Is.EqualTo("kitchen-lesson"));
         Assert.That(catalog.Levels[2].LevelId, Is.EqualTo("bedroom-lesson"));
+        Assert.That(catalog.Levels[3].LevelId, Is.EqualTo("shelter-lesson"));
+        Assert.That(catalog.Levels[4].LevelId, Is.EqualTo("after-the-hurricane-lesson"));
         Assert.That(catalog.Levels[1].Mode, Is.EqualTo(ModeName.KitchenLesson));
         Assert.That(catalog.Levels[2].Mode, Is.EqualTo(ModeName.ChildrenRoom));
+        Assert.That(catalog.Levels[3].Mode, Is.EqualTo(ModeName.Shelter));
+        Assert.That(catalog.Levels[4].Mode, Is.EqualTo(ModeName.AfterTheHurricane));
     }
 
     [Test]
@@ -174,6 +178,55 @@ public sealed class RuleSystemTests
             Events.PackWater,
             Events.PackFlashlight,
             Events.PackToys
+        }));
+    }
+
+    [Test]
+    public void ShelterLesson_UsesShelterEventSequence()
+    {
+        LevelDefinition level = LoadLevel(3);
+        level.RebuildRuntimeData();
+
+        Assert.That(level.RequiredItems, Is.EqualTo(new[]
+        {
+            LessonRuleItem.ShelterColoursABook,
+            LessonRuleItem.ShelterPlaysWithToy
+        }));
+        Assert.That(level.ExpectedRuleIds, Is.EqualTo(new[]
+        {
+            "shelter-colours-a-book",
+            "shelter-plays-with-toy"
+        }));
+        Assert.That(level.RequiredRuntimeEvents, Is.EqualTo(new[]
+        {
+            Events.ColorBook,
+            Events.PlayToy
+        }));
+    }
+
+    [Test]
+    public void AfterTheHurricaneLesson_UsesCleanupEventSequence()
+    {
+        LevelDefinition level = LoadLevel(4);
+        level.RebuildRuntimeData();
+
+        Assert.That(level.RequiredItems, Is.EqualTo(new[]
+        {
+            LessonRuleItem.AfterHurricanePickBranches,
+            LessonRuleItem.AfterHurricanePickBottles,
+            LessonRuleItem.AfterHurricaneMotherCutWood
+        }));
+        Assert.That(level.ExpectedRuleIds, Is.EqualTo(new[]
+        {
+            "after-hurricane-pick-branches",
+            "after-hurricane-pick-bottles",
+            "after-hurricane-mother-cut-wood"
+        }));
+        Assert.That(level.RequiredRuntimeEvents, Is.EqualTo(new[]
+        {
+            Events.PickBranches,
+            Events.PickBottles,
+            Events.CutBranches
         }));
     }
 
