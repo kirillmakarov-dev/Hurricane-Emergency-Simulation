@@ -1,105 +1,88 @@
+using System;
+using System.Collections.Generic;
 using UnityEngine;
+
+[Serializable]
+public class SuperMarketObjectEntry
+{
+    public string objectName;
+    public GameObject objectInHand;
+    public GameObject objectInCart;
+
+    public void ActivateHand()
+    {
+        if (objectInHand != null)
+        {
+            objectInHand.SetActive(true);
+        }
+
+        if (objectInCart != null)
+        {
+            objectInCart.SetActive(false);
+        }
+    }
+
+    public void ActivateCart()
+    {
+        if (objectInCart != null)
+        {
+            objectInCart.SetActive(true);
+        }
+
+        if (objectInHand != null)
+        {
+            objectInHand.SetActive(false);
+        }
+    }
+}
 
 public class SuperTakesObjects : MonoBehaviour
 {
-    [SerializeField] private GameObject sardinesCart;
-    [SerializeField] private GameObject waterCart;
-    [SerializeField] private GameObject sardinesHeand;
-    [SerializeField] private GameObject waterHeand;
-    [SerializeField] private GameObject chipsHeand;
-    [SerializeField] private GameObject chipsCart;
-
-    [SerializeField] private GameObject cheeseHeand;
-    [SerializeField] private GameObject cheeseCart;
-    [SerializeField] private GameObject eggsHeand;
-    [SerializeField] private GameObject eggsCart;
-    [SerializeField] private GameObject chickenHeand;
-    [SerializeField] private GameObject chickenCart;
-    [SerializeField] private GameObject fishHeand;
-    [SerializeField] private GameObject fishCart;
+    [SerializeField] private List<SuperMarketObjectEntry> objectsToActivateDeactivate =
+        new List<SuperMarketObjectEntry>();
 
     private string currentObject;
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-
-    }
     public void HandleObjectTaken(string objectName)
     {
-        if (objectName == "Sardines")
+        SuperMarketObjectEntry entry = FindEntry(objectName);
+        if (entry == null)
         {
-            sardinesHeand.SetActive(true);
-        }
-        if (objectName == "Water")
-        {
-            waterHeand.SetActive(true);
-        }
-        if (objectName == "Chips")
-        {
-            chipsHeand.SetActive(true);
-        }
-        if (objectName == "Cheese")
-        {
-            cheeseHeand.SetActive(true);
-        }
-        if (objectName == "Eggs")
-        {
-            eggsHeand.SetActive(true);
-        }
-        if (objectName == "Chicken")
-        {
-            chickenHeand.SetActive(true);
-        }
-        if (objectName == "Fish")
-        {
-            fishHeand.SetActive(true);
-        }
-        currentObject = objectName;
-    }
-    public void HandleObjectPlaced()
-    {
-        if (currentObject == "Sardines")
-        {
-            sardinesCart.SetActive(true);
-            sardinesHeand.SetActive(false);
-        }
-        if (currentObject == "Water")
-        {
-            waterCart.SetActive(true);
-            waterHeand.SetActive(false);
-        }
-        if (currentObject == "Chips")
-        {
-            chipsCart.SetActive(true);
-            chipsHeand.SetActive(false);
-        }
-        if (currentObject == "Cheese")
-        {
-            cheeseCart.SetActive(true);
-            cheeseHeand.SetActive(false);
-        }
-        if (currentObject == "Eggs")
-        {
-            eggsCart.SetActive(true);
-            eggsHeand.SetActive(false);
-        }
-        if (currentObject == "Chicken")
-        {
-            chickenCart.SetActive(true);
-            chickenHeand.SetActive(false);
-        }
-        if (currentObject == "Fish")
-        {
-            fishCart.SetActive(true);
-            fishHeand.SetActive(false);
+            return;
         }
 
+        entry.ActivateHand();
+        currentObject = objectName;
+    }
+
+    public void HandleObjectPlaced()
+    {
+        SuperMarketObjectEntry entry = FindEntry(currentObject);
+        if (entry == null)
+        {
+            return;
+        }
+
+        entry.ActivateCart();
+    }
+
+    private SuperMarketObjectEntry FindEntry(string objectName)
+    {
+        if (string.IsNullOrWhiteSpace(objectName))
+        {
+            return null;
+        }
+
+        for (int i = 0; i < objectsToActivateDeactivate.Count; i++)
+        {
+            SuperMarketObjectEntry entry = objectsToActivateDeactivate[i];
+            if (entry != null &&
+                string.Equals(entry.objectName, objectName, StringComparison.OrdinalIgnoreCase))
+            {
+                return entry;
+            }
+        }
+
+        return null;
     }
 }

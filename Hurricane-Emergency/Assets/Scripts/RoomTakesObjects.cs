@@ -6,87 +6,71 @@ using UnityEngine;
 public class RoomTakesObjects : MonoBehaviour
 {
     public List<ActivateDeactivateObject> objectsToActivateDeactivate = new List<ActivateDeactivateObject>();
-    
-    public GameObject tShirtHeand;
-    public GameObject tShirtRoom;
-
-    public GameObject fruitsHeand;
-    public GameObject fruitsRoom;
-
-    public GameObject flashLightHeand;
-    public GameObject flashLightRoom;
-
-    public GameObject lampHeand;
-    public GameObject lampRoom;
-
-    public GameObject toyHeand;
-    public GameObject toyRoom;
-
-    public GameObject aquriumHeand;
-    public GameObject aquriumRoom;
-    public GameObject waterHeand;
-    public GameObject waterRoom;
-    public GameObject scissorsHeand;
-    public GameObject chickensHeand;
-
-
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-
-    }
 
     public void HandleObjectTaken(string objectName)
     {
-        if (objectName == "TShirt")
-        {
-            tShirtRoom.SetActive(false);
-            tShirtHeand.SetActive(true);
-        }
-        if (objectName == "Fruits")
-        {
-            fruitsRoom.SetActive(false);
-            fruitsHeand.SetActive(true);
+        TrySetObjectActive(objectName, true);
+    }
 
-        }
-        if (objectName == "FlashLight")
+    public bool TrySetObjectActive(string objectName, bool activate)
+    {
+        if (string.IsNullOrWhiteSpace(objectName))
         {
-            flashLightRoom.SetActive(false);
-            flashLightHeand.SetActive(true);
+            Debug.LogWarning("RoomTakesObjects: objectName is empty.");
+            return false;
         }
-        if (objectName == "Lamp")
+
+        ActivateDeactivateObject entry = FindEntry(objectName);
+        if (entry == null)
         {
-            lampRoom.SetActive(false);
-            lampHeand.SetActive(true);
+            Debug.LogWarning($"RoomTakesObjects: object '{objectName}' was not found.");
+            return false;
         }
-        if (objectName == "Toy")
+
+        if (activate)
         {
-            toyRoom.SetActive(false);
-            toyHeand.SetActive(true);
+            entry.ActivateObject();
         }
-        if (objectName == "Aquarium")
+        else
         {
-            aquriumRoom.SetActive(false);
-            aquriumHeand.SetActive(true);
+            entry.DeactivateObject();
         }
-        if (objectName == "Water")
+
+        return true;
+    }
+
+    public bool TryGetHandObject(string objectName, out GameObject handObject)
+    {
+        handObject = null;
+        ActivateDeactivateObject entry = FindEntry(objectName);
+        if (entry == null)
         {
-            waterRoom.SetActive(false);
-            waterHeand.SetActive(true);
+            Debug.LogWarning($"RoomTakesObjects: object '{objectName}' was not found.");
+            return false;
         }
-        if (objectName == "Scissors")
+
+        handObject = entry.objectInHand;
+        if (handObject == null)
         {
-            scissorsHeand.SetActive(true);
+            Debug.LogWarning($"RoomTakesObjects: hand object for '{objectName}' was not assigned.");
+            return false;
         }
-        if (objectName == "Chickens")
+
+        return true;
+    }
+
+    private ActivateDeactivateObject FindEntry(string objectName)
+    {
+        for (int i = 0; i < objectsToActivateDeactivate.Count; i++)
         {
-            chickensHeand.SetActive(true);
+            ActivateDeactivateObject entry = objectsToActivateDeactivate[i];
+            if (entry != null &&
+                string.Equals(entry.objectName, objectName, StringComparison.OrdinalIgnoreCase))
+            {
+                return entry;
+            }
         }
+
+        return null;
     }
 }

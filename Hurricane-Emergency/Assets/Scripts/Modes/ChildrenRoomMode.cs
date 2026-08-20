@@ -35,6 +35,7 @@ public class ChildrenRoomMode : MonoBehaviour, IConfiguredSequenceMode
 
     private Animator kelenAnimator;
     private Animator keyAnimator;
+    private RoomTakesObjects kelenRoomObjects;
 
     private Animator momAnimator;
     public bool checkanimation;
@@ -79,6 +80,7 @@ public class ChildrenRoomMode : MonoBehaviour, IConfiguredSequenceMode
 
         kelenAnimator = kelen.GetComponent<Animator>();
         keyAnimator = key.GetComponent<Animator>();
+        kelenRoomObjects = kelen.GetComponent<RoomTakesObjects>();
         kelenStartScale = kelen.transform.localScale.x;
 
         animationMap = new Dictionary<Animations, Action<Action>>()
@@ -297,9 +299,16 @@ public class ChildrenRoomMode : MonoBehaviour, IConfiguredSequenceMode
 
     IEnumerator KelenTakeObjectsFromKitchenCoroutine(GameObject objToMove, Vector3 targetPosition, Animations animationToPlay, float speed, Action onComplete)
     {
-        GameObject heandGameObject = animationToPlay == Animations.KelenTakeScissors ?
-        kelen.GetComponent<RoomTakesObjects>().scissorsHeand :
-        kelen.GetComponent<RoomTakesObjects>().chickensHeand;
+        if (kelenRoomObjects == null)
+        {
+            yield break;
+        }
+
+        string objectName = animationToPlay == Animations.KelenTakeScissors ? "Scissors" : "Chickens";
+        if (!kelenRoomObjects.TryGetHandObject(objectName, out GameObject heandGameObject))
+        {
+            yield break;
+        }
 
 
         // Adjust this value to change the size of the sprite
@@ -335,7 +344,7 @@ public class ChildrenRoomMode : MonoBehaviour, IConfiguredSequenceMode
     {
         StartCoroutine(KelenTakeItemViaRoomOffsetCoroutine(
             kelen, new Vector3(-5.5f, -1.5f, 0f), 2f,
-            "Water", kelen.GetComponent<RoomTakesObjects>().waterHeand, onComplete, Events.PackWater));
+            "Water", onComplete, Events.PackWater));
         // WebGLBridge.SendEvent(Events.PackWater.ToString());
     }
 
@@ -343,14 +352,14 @@ public class ChildrenRoomMode : MonoBehaviour, IConfiguredSequenceMode
     {
         StartCoroutine(KelenTakeItemViaToyOffsetCoroutine(
             kelen, new Vector3(4.7f, -0.80f, 0f), 2f,
-            "Aquarium", kelen.GetComponent<RoomTakesObjects>().aquriumHeand, onComplete));
+            "Aquarium", onComplete));
     }
 
     public void KelenTakeToy(Action onComplete)
     {
         StartCoroutine(KelenTakeItemViaToyOffsetCoroutine(
             kelen, new Vector3(4f, -1f, 0f), 2f,
-            "Toy", kelen.GetComponent<RoomTakesObjects>().toyHeand, onComplete, Events.PackToys));
+            "Toy", onComplete, Events.PackToys));
         // WebGLBridge.SendEvent(Events.PackToys.ToString());
     }
 
@@ -358,14 +367,14 @@ public class ChildrenRoomMode : MonoBehaviour, IConfiguredSequenceMode
     {
         StartCoroutine(KelenTakeItemViaRoomOffsetCoroutine(
             kelen, new Vector3(-5.16f, -1.18f, 0f), 2f,
-            "Lamp", kelen.GetComponent<RoomTakesObjects>().lampHeand, onComplete));
+            "Lamp", onComplete));
     }
 
     private void KelenTakeFlashlight(Action onComplete)
     {
         StartCoroutine(KelenTakeItemViaRoomOffsetCoroutine(
             kelen, new Vector3(-6f, -2f, 0f), 2f,
-            "FlashLight", kelen.GetComponent<RoomTakesObjects>().flashLightHeand, onComplete, Events.PackFlashlight));
+            "FlashLight", onComplete, Events.PackFlashlight));
         //WebGLBridge.SendEvent(Events.PackFlashlight.ToString());
     }
 
@@ -398,7 +407,10 @@ public class ChildrenRoomMode : MonoBehaviour, IConfiguredSequenceMode
 
         yield return MoveToTarget(objectTransform, bagPosition, speed);
         kelenAnimator.enabled = false; // Disable the animator to stop any ongoing animations
-        kelen.GetComponent<RoomTakesObjects>().tShirtHeand.SetActive(false); // Call the method to handle the object being taken
+        if (kelenRoomObjects != null)
+        {
+            kelenRoomObjects.TrySetObjectActive("TShirt", false);
+        }
         WebGLBridge.SendEvent(Events.PackClothes.ToString());
         kelenAnimator.enabled = true;
         kelenAnimator.SetTrigger("Idle");
@@ -409,7 +421,7 @@ public class ChildrenRoomMode : MonoBehaviour, IConfiguredSequenceMode
     {
         StartCoroutine(KelenTakeItemViaRoomOffsetCoroutine(
             kelen, new Vector3(-4.4f, -1.5f, 0f), 2f,
-            "Fruits", kelen.GetComponent<RoomTakesObjects>().fruitsHeand, onComplete));
+            "Fruits", onComplete));
     }
 
     public void FlipKelen(bool left)
@@ -556,10 +568,15 @@ public class ChildrenRoomMode : MonoBehaviour, IConfiguredSequenceMode
     // Used by: Water, Lamp, Flashlight, Fruits.
     private IEnumerator KelenTakeItemViaRoomOffsetCoroutine(
         GameObject objToMove, Vector3 targetPosition, float speed,
-        string pickupTrigger, GameObject handObject, Action onComplete, Events eventname = Events.Empty)
+        string pickupTrigger, Action onComplete, Events eventname = Events.Empty)
     {
         Vector3 bagPosition = new Vector3(4f, -2f, 0f);
         Transform objectTransform = objToMove.transform;
+
+        if (kelenRoomObjects == null || !kelenRoomObjects.TryGetHandObject(pickupTrigger, out GameObject handObject))
+        {
+            yield break;
+        }
 
         if (targetPosition.x < 0)
             FlipKelen(false);
@@ -597,10 +614,15 @@ public class ChildrenRoomMode : MonoBehaviour, IConfiguredSequenceMode
     // Key differences from RoomOffset variant: no waypoint on return, no 0.5f animator-disable wait.
     private IEnumerator KelenTakeItemViaToyOffsetCoroutine(
         GameObject objToMove, Vector3 targetPosition, float speed,
-        string pickupTrigger, GameObject handObject, Action onComplete, Events eventname = Events.Empty)
+        string pickupTrigger, Action onComplete, Events eventname = Events.Empty)
     {
         Vector3 bagPosition = new Vector3(4f, -2f, 0f);
         Transform objectTransform = objToMove.transform;
+
+        if (kelenRoomObjects == null || !kelenRoomObjects.TryGetHandObject(pickupTrigger, out GameObject handObject))
+        {
+            yield break;
+        }
 
         if (targetPosition.x > 0)
             FlipKelen(true);
