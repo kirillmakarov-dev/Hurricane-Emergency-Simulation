@@ -63,6 +63,12 @@ public class AnimationEvent : MonoBehaviour
     {
         WebGLBridge.SendEvent(Events.MayArrives.ToString());
         WebGLBridge.OnMayArrives(ObjectsHolder.instance.GetMayID());
+
+        if (SimulationManager.Instance != null && SimulationManager.Instance.CurrentMode == ModeName.House)
+        {
+            HouseMod house = SimulationManager.Instance.GetMode<HouseMod>();
+            house?.HandleMayArrivalForConfiguredLesson();
+        }
     }
 
    

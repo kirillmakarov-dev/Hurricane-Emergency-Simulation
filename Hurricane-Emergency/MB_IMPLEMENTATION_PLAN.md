@@ -15,6 +15,8 @@ The Unity-native lesson pattern is implemented for all ten current lessons: Hous
 - `LessonLaunchContext` transfers the selected rule ids between scenes locally in Unity.
 - `Check` launches the selected rules for every lesson; correctness is reported during play rather than blocking scene start.
 - `SimulationEventChannel` and `LevelSessionController` validate runtime events without replacing existing animations.
+- House and Cleaning Garden use explicit FIFO lesson queues and guaranteed completion-event fallback reporting; repeated clip events do not overwrite meaningful feedback.
+- House restores the former browser callback between `ActivateMay1` and `May1onArrivesAnim` locally, while animation-event receivers remain serialized on the relevant scene objects.
 - Result, replay, and return-to-menu paths are connected.
 - WebGL callbacks remain available as compatibility output; they are not the source of truth for this flow.
 

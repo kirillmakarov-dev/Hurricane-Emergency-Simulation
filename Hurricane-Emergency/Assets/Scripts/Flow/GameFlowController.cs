@@ -286,8 +286,8 @@ public sealed class GameFlowController : MonoBehaviour
                 view.GameplayFeedbackText.color = Coral;
                 break;
             case RuntimeStepResultType.Duplicate:
-                view.GameplayFeedbackText.text = "Duplicate event ignored.";
-                view.GameplayFeedbackText.color = Cream;
+                // Animation clips may report the same physical action more than once.
+                // Keep the last meaningful feedback visible instead of replacing it.
                 break;
         }
     }

@@ -262,6 +262,8 @@ External/public action entry points:
 
 Known outbound events are split between this class and `AnimationEvent`: `RadioBroadcast`, `ReviewEmergencyPlan`, `CheckGoBag`, `JuneFirst`, and `MayArrives`.
 
+The Unity lesson path stores every selected `HouseAnimations` command in one FIFO queue. Each command starts the existing House action, waits for its visual milestone, and reports the configured event as a fallback. Existing animation events remain active; duplicate reports do not replace the last meaningful gameplay feedback. The emergency-plan and Go Bag Animator objects have serialized `EventsManager` receivers for `ReviewEmergencyPlan` and `CheckGoBag`. During a configured lesson, `AnimationEvent.ActivateMay1()` locally invokes the formerly WebGL-driven `May1onArrivesAnim()` transition so Page Animation can unlock the emergency-plan action. The automatic transitions from Check Go Bag and Watch TV to `ClearingGarden` are suppressed only for this isolated lesson attempt.
+
 ### `ClearingGarden`
 
 Class: `ClearingGardenMod`
@@ -269,6 +271,7 @@ Class: `ClearingGardenMod`
 Primary behavior:
 
 - maintains independent animation queues for mother and father;
+- maintains one additional FIFO lesson queue so selected actions run in the exact authored order across both characters;
 - maps `Cleaning` and `Watering` to mother;
 - maps `Walk` and `PlyWood` to father;
 - drives leaves, plywood, character movement, and watering particles.
@@ -280,7 +283,7 @@ Action entry points:
 - `GoForWalk()`
 - `OnWateringTheFlowers()`
 
-`CleanYard` and `CollectPlywood` are reported by animation helper components rather than directly by this mode. Direct sends inside the mode are commented out.
+`CleanYard` and `CollectPlywood` are still reported by animation helper components during their clips. When a queued lesson action completes, the mode also sends its configured event as a fallback; duplicate reports are ignored without replacing useful feedback. Distractor actions report `Events.Empty` after their animation completes.
 
 ### `SuperMarket`
 

@@ -49,6 +49,8 @@ public class ClearingGardenMod : MonoBehaviour, ISimulationMode
 
     private Dictionary<Anim, Action<Action>> momAnimationMap;
     private Dictionary<Anim, Action<Action>> dadAnimationMap;
+    private readonly Queue<ClearingGardenAnimations> configuredAnimationQueue = new();
+    private Coroutine configuredQueueCoroutine;
 
     private void Awake()
     {
@@ -70,7 +72,13 @@ public class ClearingGardenMod : MonoBehaviour, ISimulationMode
 
     public void Cleanup()
     {
-        // throw new System.NotImplementedException();
+        if (configuredQueueCoroutine != null)
+        {
+            StopCoroutine(configuredQueueCoroutine);
+            configuredQueueCoroutine = null;
+        }
+
+        configuredAnimationQueue.Clear();
     }
 
     public void Initialize()
@@ -110,19 +118,32 @@ public class ClearingGardenMod : MonoBehaviour, ISimulationMode
 
     public void PlayConfiguredSequence(IReadOnlyList<string> animationNames)
     {
-        StartCoroutine(PlayConfiguredSequenceCoroutine(animationNames));
-    }
+        if (configuredQueueCoroutine != null)
+        {
+            StopCoroutine(configuredQueueCoroutine);
+        }
 
-    private IEnumerator PlayConfiguredSequenceCoroutine(IReadOnlyList<string> animationNames)
-    {
+        configuredAnimationQueue.Clear();
         for (int i = 0; i < animationNames.Count; i++)
         {
-            if (!Enum.TryParse(animationNames[i], true, out ClearingGardenAnimations animation))
+            if (Enum.TryParse(animationNames[i], true, out ClearingGardenAnimations animation))
+            {
+                configuredAnimationQueue.Enqueue(animation);
+            }
+            else
             {
                 Debug.LogWarning($"Unknown Cleaning Garden lesson command: {animationNames[i]}");
-                continue;
             }
+        }
 
+        configuredQueueCoroutine = StartCoroutine(ProcessConfiguredLessonQueue());
+    }
+
+    private IEnumerator ProcessConfiguredLessonQueue()
+    {
+        while (configuredAnimationQueue.Count > 0)
+        {
+            ClearingGardenAnimations animation = configuredAnimationQueue.Dequeue();
             bool finished = false;
             Action onComplete = () => finished = true;
 
@@ -135,17 +156,28 @@ public class ClearingGardenMod : MonoBehaviour, ISimulationMode
                     StartGatherPlywood(onComplete);
                     break;
                 case ClearingGardenAnimations.WaterFlowers:
-                    WebGLBridge.SendEvent(Events.Empty.ToString());
                     StartWateringFlowers(onComplete);
                     break;
                 case ClearingGardenAnimations.GoForWalk:
-                    WebGLBridge.SendEvent(Events.Empty.ToString());
                     StartDadWalk(onComplete);
                     break;
             }
 
             yield return new WaitUntil(() => finished);
+            WebGLBridge.SendEvent(GetConfiguredEvent(animation).ToString());
         }
+
+        configuredQueueCoroutine = null;
+    }
+
+    private static Events GetConfiguredEvent(ClearingGardenAnimations animation)
+    {
+        return animation switch
+        {
+            ClearingGardenAnimations.ClearYard => Events.CleanYard,
+            ClearingGardenAnimations.GatherPlywood => Events.CollectPlywood,
+            _ => Events.Empty
+        };
     }
 
     public void OnClearYard() // mother //called from WebGL

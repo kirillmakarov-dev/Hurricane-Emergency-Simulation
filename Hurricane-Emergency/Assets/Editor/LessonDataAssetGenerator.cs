@@ -61,7 +61,8 @@ public static class LessonDataAssetGenerator
                 new[]
                 {
                     LessonRuleItem.HousePlayRadioSong,
-                    LessonRuleItem.HouseParentsPanic
+                    LessonRuleItem.HouseParentsPanic,
+                    LessonRuleItem.HouseWatchTV
                 },
                 System.Array.Empty<Events>());
             EditorUtility.SetDirty(house);

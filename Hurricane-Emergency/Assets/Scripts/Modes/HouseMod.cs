@@ -8,7 +8,8 @@ public enum HouseAnimations
     ReviewEmergencyPlan,
     CheckGoBag,
     PlayRadioSong,
-    ParentsPanic
+    ParentsPanic,
+    WatchTV
 }
 
 public class HouseMod : MonoBehaviour, ISimulationMode
@@ -41,6 +42,9 @@ public class HouseMod : MonoBehaviour, ISimulationMode
 
     [SerializeField] private GameObject pageAnimation; // Reference to the text canvas GameObject
 
+    private readonly Queue<HouseAnimations> configuredAnimationQueue = new();
+    private Coroutine configuredQueueCoroutine;
+    private bool suppressAutomaticGardenTransition;
 
     void Update()
     {
@@ -71,7 +75,14 @@ public class HouseMod : MonoBehaviour, ISimulationMode
     }
     public void Cleanup()
     {
+        if (configuredQueueCoroutine != null)
+        {
+            StopCoroutine(configuredQueueCoroutine);
+            configuredQueueCoroutine = null;
+        }
 
+        configuredAnimationQueue.Clear();
+        suppressAutomaticGardenTransition = false;
     }
 
     public void Initialize()
@@ -109,56 +120,70 @@ public class HouseMod : MonoBehaviour, ISimulationMode
 
     public void PlayConfiguredSequence(IReadOnlyList<string> animationNames)
     {
-        StartCoroutine(PlayConfiguredSequenceCoroutine(animationNames));
-    }
+        if (configuredQueueCoroutine != null)
+        {
+            StopCoroutine(configuredQueueCoroutine);
+        }
 
-    private IEnumerator PlayConfiguredSequenceCoroutine(IReadOnlyList<string> animationNames)
-    {
+        configuredAnimationQueue.Clear();
+        suppressAutomaticGardenTransition = true;
+
         for (int i = 0; i < animationNames.Count; i++)
         {
-            if (!System.Enum.TryParse(animationNames[i], true, out HouseAnimations animation))
+            if (System.Enum.TryParse(animationNames[i], true, out HouseAnimations animation))
             {
-                Debug.LogWarning($"Unknown House lesson command: {animationNames[i]}");
-                continue;
-            }
-
-            Events expectedEvent = GetExpectedEvent(animation);
-            bool eventReceived = false;
-            void HandleEvent(SimulationEventData eventData)
-            {
-                if (eventData.Mode == ModeName.House && eventData.EventType == expectedEvent)
-                {
-                    eventReceived = true;
-                }
-            }
-
-            if (expectedEvent != Events.Empty)
-            {
-                SimulationEventChannel.EventRaised += HandleEvent;
-            }
-
-            PlayConfiguredAnimation(animation);
-
-            if (expectedEvent == Events.Empty)
-            {
-                WebGLBridge.SendEvent(Events.Empty.ToString());
-                yield return new WaitForSeconds(2f);
+                configuredAnimationQueue.Enqueue(animation);
             }
             else
             {
-                float timeout = 30f;
-                while (!eventReceived && timeout > 0f)
+                Debug.LogWarning($"Unknown House lesson command: {animationNames[i]}");
+            }
+        }
+
+        configuredQueueCoroutine = StartCoroutine(ProcessConfiguredQueue());
+    }
+
+    private IEnumerator ProcessConfiguredQueue()
+    {
+        while (configuredAnimationQueue.Count > 0)
+        {
+            HouseAnimations animation = configuredAnimationQueue.Dequeue();
+            PlayConfiguredAnimation(animation);
+            yield return WaitForConfiguredAnimation(animation);
+            WebGLBridge.SendEvent(GetExpectedEvent(animation).ToString());
+        }
+
+        configuredQueueCoroutine = null;
+    }
+
+    private IEnumerator WaitForConfiguredAnimation(HouseAnimations animation)
+    {
+        switch (animation)
+        {
+            case HouseAnimations.RadioAnnouncement:
+                yield return new WaitForSeconds(3.1f);
+                break;
+            case HouseAnimations.ReviewEmergencyPlan:
+            {
+                float timeout = 20f;
+                while (!emergencyPlanMain.activeSelf && timeout > 0f)
                 {
-                    timeout -= Time.unscaledDeltaTime;
+                    timeout -= Time.deltaTime;
                     yield return null;
                 }
 
-                SimulationEventChannel.EventRaised -= HandleEvent;
-                if (!eventReceived)
-                {
-                    Debug.LogWarning($"House lesson command timed out: {animation}");
-                }
+                yield return new WaitForSeconds(1.25f);
+                break;
             }
+            case HouseAnimations.CheckGoBag:
+                yield return new WaitForSeconds(3.5f);
+                break;
+            case HouseAnimations.WatchTV:
+                yield return new WaitForSeconds(4f);
+                break;
+            default:
+                yield return new WaitForSeconds(2f);
+                break;
         }
     }
 
@@ -180,6 +205,9 @@ public class HouseMod : MonoBehaviour, ISimulationMode
                 break;
             case HouseAnimations.ParentsPanic:
                 ParentsPanic();
+                break;
+            case HouseAnimations.WatchTV:
+                WatchTV();
                 break;
         }
     }
@@ -261,7 +289,10 @@ public class HouseMod : MonoBehaviour, ISimulationMode
             kayAndKelanPlaying.SetActive(false);
             tvAnimation.SetActive(true);
         });
-        Invoke(nameof(ChangeToClearingGardenMode), 4f); // End TV after 4 seconds
+        if (!suppressAutomaticGardenTransition)
+        {
+            Invoke(nameof(ChangeToClearingGardenMode), 4f); // End TV after 4 seconds
+        }
     }
 
     public void ParentsPanic()
@@ -280,7 +311,10 @@ public class HouseMod : MonoBehaviour, ISimulationMode
         checkGobag.SetActive(true);
         // WebGLBridge.SendEvent(Events.CheckGoBag.ToString());
         yield return new WaitForSeconds(5f);
-        ChangeToClearingGardenMode();
+        if (!suppressAutomaticGardenTransition)
+        {
+            ChangeToClearingGardenMode();
+        }
     }
 
     public void ChangeToClearingGardenMode()
@@ -300,5 +334,13 @@ public class HouseMod : MonoBehaviour, ISimulationMode
             pageAnimation.SetActive(true);
         }
         ContinueCalendarAnimation();
+    }
+
+    public void HandleMayArrivalForConfiguredLesson()
+    {
+        if (suppressAutomaticGardenTransition)
+        {
+            May1onArrivesAnim();
+        }
     }
 }

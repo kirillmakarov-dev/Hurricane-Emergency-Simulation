@@ -72,7 +72,9 @@ public enum LessonRuleItem
     [InspectorName("Supermarket / Cheese")] SupermarketCheese = 58,
     [InspectorName("Supermarket / Eggs")] SupermarketEggs = 59,
     [InspectorName("Supermarket / Chicken")] SupermarketChicken = 60,
-    [InspectorName("Supermarket / Fish")] SupermarketFish = 61
+    [InspectorName("Supermarket / Fish")] SupermarketFish = 61,
+
+    [InspectorName("House / Watch TV")] HouseWatchTV = 62
 }
 
 public readonly struct LessonRuleDescriptor
@@ -282,6 +284,9 @@ public static class LessonRuleItemCatalog
             LessonRuleItem.HouseParentsPanic => Create(
                 "house-parents-panic", "Parents panic", "Stay calm and follow the emergency plan.",
                 HouseAnimations.ParentsPanic, Events.Empty, ModeName.House),
+            LessonRuleItem.HouseWatchTV => Create(
+                "house-watch-tv", "Watch TV", "Watching TV does not replace reviewing the emergency plan.",
+                HouseAnimations.WatchTV, Events.Empty, ModeName.House),
 
             LessonRuleItem.CleaningGardenClearYard => Create(
                 "cleaning-garden-clear-yard", "Clear loose yard debris", "Remove loose leaves and debris before strong winds arrive.",
