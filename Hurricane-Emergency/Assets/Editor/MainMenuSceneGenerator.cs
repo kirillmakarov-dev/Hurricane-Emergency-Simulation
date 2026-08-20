@@ -16,15 +16,20 @@ public static class MainMenuSceneGenerator
     private const string SelectedRulePrefabPath = PrefabFolder + "/SelectedRuleRow.prefab";
     private const string LessonButtonPrefabPath = PrefabFolder + "/LessonButton.prefab";
 
-    private static readonly Color Ink = Hex("17252D");
-    private static readonly Color DeepTeal = Hex("184E57");
-    private static readonly Color Teal = Hex("238A8D");
-    private static readonly Color Aqua = Hex("65D1C8");
-    private static readonly Color Cream = Hex("F4EBD9");
-    private static readonly Color Paper = Hex("FFF9EE");
-    private static readonly Color Coral = Hex("F47C65");
-    private static readonly Color Success = Hex("2D9D78");
+    private static readonly Color Ink = Hex("172A38");
+    private static readonly Color DeepBlue = Hex("006D96");
+    private static readonly Color Blue = Hex("2CAEF4");
+    private static readonly Color Purple = Hex("A920B8");
+    private static readonly Color Yellow = Hex("FFD447");
+    private static readonly Color CanvasColor = Hex("F4F7FC");
+    private static readonly Color Soft = Hex("E9EEF6");
+    private static readonly Color Paper = Hex("FFFFFF");
+    private static readonly Color Danger = Hex("D91F2B");
+    private static readonly Color Success = Hex("00D97E");
+    private static readonly Color Cream = Hex("FFF8E8");
+    private static readonly Color Muted = Hex("40515E");
     private static Font font;
+    private static Sprite roundedSprite;
 
     [MenuItem("Tools/Hurricane/Rebuild Game Flow UI Assets")]
     public static void RebuildGameFlowUiAssets()
@@ -33,7 +38,9 @@ public static class MainMenuSceneGenerator
 
         EnsurePrefabFolder();
         LevelCatalog levelCatalog = LessonDataAssetGenerator.EnsureLessonDataAssets();
-        font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        font = AssetDatabase.LoadAssetAtPath<Font>("Assets/TextMesh Pro/Fonts/LiberationSans.ttf")
+            ?? Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        roundedSprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
         RuleOptionView optionPrefab = BuildRuleOptionPrefab();
         SelectedRuleRowView selectedPrefab = BuildSelectedRulePrefab();
         LessonButtonView lessonPrefab = BuildLessonButtonPrefab();
@@ -59,11 +66,14 @@ public static class MainMenuSceneGenerator
     private static RuleOptionView BuildRuleOptionPrefab()
     {
         GameObject root = CreateImage("RuleOptionButton", Paper);
+        Round(root);
+        AddOutline(root, Hex("C7D1DD"), new Vector2(1.5f, -1.5f));
+        AddShadow(root, new Color(0.05f, 0.18f, 0.28f, 0.12f), new Vector2(0f, -3f));
         Button button = root.AddComponent<Button>();
         ConfigureButtonColors(button, Paper);
-        AddLayout(root, 56f);
-        Text label = CreateText("Rule action", root.transform, 17, FontStyle.Bold, Ink, TextAnchor.MiddleLeft);
-        Stretch(label.rectTransform, 18f);
+        AddLayout(root, 60f);
+        Text label = CreateText("Rule action", root.transform, 17, FontStyle.Bold, Ink, TextAnchor.MiddleCenter);
+        Stretch(label.rectTransform, 20f);
         RuleOptionView view = root.AddComponent<RuleOptionView>();
         view.Configure(label, button);
         GameObject prefab = PrefabUtility.SaveAsPrefabAsset(root, RuleOptionPrefabPath);
@@ -73,15 +83,29 @@ public static class MainMenuSceneGenerator
 
     private static SelectedRuleRowView BuildSelectedRulePrefab()
     {
-        GameObject root = CreateHorizontalGroup("SelectedRuleRow", null, 8f);
+        GameObject root = CreateImage("SelectedRuleRow", Paper);
+        Round(root);
+        AddShadow(root, new Color(0.05f, 0.18f, 0.28f, 0.14f), new Vector2(0f, -3f));
         AddLayout(root, 58f);
-        Text label = CreateText("1. Rule action", root.transform, 17, FontStyle.Bold, Ink, TextAnchor.MiddleLeft);
-        AddFlexible(label.gameObject, 1f);
-        Button up = CreateButton("UP", root.transform, Cream, DeepTeal, 48f, 56f);
-        Button down = CreateButton("DOWN", root.transform, Cream, DeepTeal, 48f, 68f);
-        Button remove = CreateButton("X", root.transform, Coral, Color.white, 48f, 48f);
+        HorizontalLayoutGroup rowLayout = AddHorizontal(root, 0f, 0f);
+        rowLayout.padding = new RectOffset(12, 0, 6, 6);
+        rowLayout.childAlignment = TextAnchor.MiddleLeft;
+        rowLayout.childForceExpandHeight = false;
+
+        GameObject badge = CreateImage("OrderBadge", DeepBlue);
+        badge.transform.SetParent(root.transform, false);
+        Round(badge);
+        AddLayout(badge, 42f, 42f);
+        Text order = CreateText("1", badge.transform, 17, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter);
+        Stretch(order.rectTransform, 4f);
+        Text action = CreateText("Rule action", root.transform, 17, FontStyle.Bold, Ink, TextAnchor.MiddleLeft);
+        AddLayout(action.gameObject, 46f);
+        AddFlexibleWidth(action.gameObject, 1f);
+        Button up = CreateButton("UP", root.transform, Blue, Color.white, 46f, 58f, false);
+        Button down = CreateButton("DN", root.transform, Yellow, Ink, 46f, 58f, false);
+        Button remove = CreateButton("X", root.transform, Danger, Color.white, 46f, 54f, false);
         SelectedRuleRowView view = root.AddComponent<SelectedRuleRowView>();
-        view.Configure(label, up, down, remove);
+        view.Configure(order, action, up, down, remove);
         GameObject prefab = PrefabUtility.SaveAsPrefabAsset(root, SelectedRulePrefabPath);
         Object.DestroyImmediate(root);
         return prefab.GetComponent<SelectedRuleRowView>();
@@ -89,11 +113,15 @@ public static class MainMenuSceneGenerator
 
     private static LessonButtonView BuildLessonButtonPrefab()
     {
-        GameObject root = CreateImage("LessonButton", Cream);
-        AddLayout(root, 196f, 590f);
+        GameObject root = CreateImage("LessonButton", Soft);
+        Round(root);
+        AddOutline(root, DeepBlue, new Vector2(2f, -2f));
+        AddShadow(root, new Color(0.04f, 0.16f, 0.25f, 0.18f), new Vector2(0f, -5f));
+        AddLayout(root, 206f, 560f);
 
         GameObject scrim = CreatePanel("BackgroundScrim", root.transform,
-            new Color(Ink.r, Ink.g, Ink.b, 0.72f), Vector2.zero, Vector2.one);
+            new Color(0.12f, 0.55f, 0.78f, 0.42f), Vector2.zero, Vector2.one);
+        Round(scrim);
         scrim.GetComponent<Image>().raycastTarget = false;
 
         GameObject content = new("CardContent", typeof(RectTransform));
@@ -101,17 +129,17 @@ public static class MainMenuSceneGenerator
         RectTransform contentRect = content.GetComponent<RectTransform>();
         contentRect.anchorMin = Vector2.zero;
         contentRect.anchorMax = Vector2.one;
-        contentRect.offsetMin = new Vector2(20f, 16f);
-        contentRect.offsetMax = new Vector2(-20f, -16f);
-        VerticalLayoutGroup layout = AddVertical(content, 5f, 0f);
+        contentRect.offsetMin = new Vector2(22f, 18f);
+        contentRect.offsetMax = new Vector2(-22f, -18f);
+        VerticalLayoutGroup layout = AddVertical(content, 4f, 0f);
         layout.childAlignment = TextAnchor.MiddleLeft;
 
-        Text number = FixedText("LESSON 01", content.transform, 12, FontStyle.Bold, Aqua, TextAnchor.MiddleLeft, 16f);
-        Text title = FixedText("Lesson title", content.transform, 22, FontStyle.Bold, Color.white, TextAnchor.MiddleLeft, 30f);
-        Text description = FixedText("Lesson objective", content.transform, 14, FontStyle.Normal, Cream, TextAnchor.UpperLeft, 48f);
+        Text number = FixedText("LESSON 01", content.transform, 12, FontStyle.Bold, Blue, TextAnchor.MiddleLeft, 18f);
+        Text title = FixedText("Lesson title", content.transform, 24, FontStyle.Bold, Color.white, TextAnchor.MiddleLeft, 34f);
+        Text description = FixedText("Lesson objective", content.transform, 14, FontStyle.Normal, Color.white, TextAnchor.UpperLeft, 54f);
         GameObject actionRow = CreateHorizontalGroup("CardAction", content.transform, 0f);
         AddLayout(actionRow, 44f);
-        Button open = CreateButton("OPEN LESSON", actionRow.transform, Teal, Color.white, 44f, 180f);
+        Button open = CreateButton("OPEN LESSON", actionRow.transform, Yellow, Ink, 44f, 174f);
         GameObject spacer = new("Spacer", typeof(RectTransform));
         spacer.transform.SetParent(actionRow.transform, false);
         AddFlexible(spacer, 1f);
@@ -137,25 +165,44 @@ public static class MainMenuSceneGenerator
         scaler.referenceResolution = new Vector2(1920f, 1080f);
         scaler.matchWidthOrHeight = 0.5f;
 
-        GameObject mainMenu = CreateScreen("MainMenuScreen", root.transform, Ink);
-        GameObject mainContent = CreateContent(mainMenu.transform, Paper);
-        VerticalLayoutGroup mainLayout = AddVertical(mainContent, 18f, 38f);
+        GameObject mainMenu = CreateScreen("MainMenuScreen", root.transform, CanvasColor);
+        GameObject topAppBar = CreatePanel("TopAppBar", mainMenu.transform, Paper, new Vector2(0f, 0.91f), Vector2.one);
+        AddShadow(topAppBar, new Color(0.04f, 0.16f, 0.25f, 0.12f), new Vector2(0f, -4f));
+        HorizontalLayoutGroup headerLayout = AddHorizontal(topAppBar, 26f, 34f);
+        headerLayout.childAlignment = TextAnchor.MiddleCenter;
+        Text logo = CreateText("HERO READY", topAppBar.transform, 31, FontStyle.Bold, Purple, TextAnchor.MiddleLeft);
+        AddLayout(logo.gameObject, 54f, 330f);
+        GameObject nav = CreateHorizontalGroup("Navigation", topAppBar.transform, 24f);
+        AddFlexible(nav, 1f);
+        nav.GetComponent<HorizontalLayoutGroup>().childAlignment = TextAnchor.MiddleCenter;
+        Text missions = CreateText("MISSIONS", nav.transform, 14, FontStyle.Bold, DeepBlue, TextAnchor.MiddleCenter);
+        AddLayout(missions.gameObject, 48f, 120f);
+        Text badges = CreateText("BADGES", nav.transform, 14, FontStyle.Bold, Ink, TextAnchor.MiddleCenter);
+        AddLayout(badges.gameObject, 48f, 100f);
+        Text map = CreateText("MAP", nav.transform, 14, FontStyle.Bold, Ink, TextAnchor.MiddleCenter);
+        AddLayout(map.gameObject, 48f, 80f);
+        Text utilities = CreateText("SETTINGS     HELP", topAppBar.transform, 13, FontStyle.Bold, DeepBlue, TextAnchor.MiddleRight);
+        AddLayout(utilities.gameObject, 54f, 330f);
+
+        GameObject mainContent = CreatePanel("Content", mainMenu.transform, Paper, new Vector2(0.06f, 0.045f), new Vector2(0.94f, 0.88f));
+        Round(mainContent);
+        AddShadow(mainContent, new Color(0.04f, 0.16f, 0.25f, 0.1f), new Vector2(0f, -5f));
+        VerticalLayoutGroup mainLayout = AddVertical(mainContent, 12f, 42f);
         mainLayout.childAlignment = TextAnchor.MiddleLeft;
-        FixedText("HURRICANE READY  /  UNITY", mainContent.transform, 17, FontStyle.Bold, Teal, TextAnchor.MiddleLeft, 30f);
-        FixedText("Choose a lesson", mainContent.transform, 52, FontStyle.Bold, Ink, TextAnchor.MiddleLeft, 72f);
-        FixedText("Learn emergency preparation by building rules, then watch the simulation follow your plan.", mainContent.transform, 22, FontStyle.Normal, DeepTeal, TextAnchor.MiddleLeft, 72f);
+        FixedText("HURRICANE READY  /  UNITY", mainContent.transform, 14, FontStyle.Bold, Purple, TextAnchor.MiddleLeft, 24f);
+        FixedText("Choose a lesson", mainContent.transform, 42, FontStyle.Bold, DeepBlue, TextAnchor.MiddleLeft, 56f);
+        FixedText("Learn emergency preparation by building rules, then watch the simulation follow your plan.", mainContent.transform, 19, FontStyle.Normal, Muted, TextAnchor.MiddleLeft, 52f);
         GameObject lessonScrollArea = CreateImage("LessonScrollArea", Paper);
+        Round(lessonScrollArea);
         lessonScrollArea.transform.SetParent(mainContent.transform, false);
         AddFlexible(lessonScrollArea, 1f);
         ScrollRect lessonScrollRect = lessonScrollArea.AddComponent<ScrollRect>();
         lessonScrollRect.horizontal = false;
         lessonScrollRect.vertical = true;
-        lessonScrollRect.movementType = ScrollRect.MovementType.Elastic;
-        lessonScrollRect.scrollSensitivity = 30f;
-        Image lessonScrollImage = lessonScrollArea.GetComponent<Image>();
-        lessonScrollImage.color = new Color(Paper.r, Paper.g, Paper.b, 0.75f);
+        lessonScrollRect.movementType = ScrollRect.MovementType.Clamped;
+        lessonScrollRect.scrollSensitivity = 34f;
 
-        GameObject viewport = CreateImage("Viewport", Color.white);
+        GameObject viewport = CreateImage("Viewport", Paper);
         viewport.transform.SetParent(lessonScrollArea.transform, false);
         Mask viewportMask = viewport.AddComponent<Mask>();
         viewportMask.showMaskGraphic = false;
@@ -163,7 +210,7 @@ public static class MainMenuSceneGenerator
         viewportRect.anchorMin = Vector2.zero;
         viewportRect.anchorMax = Vector2.one;
         viewportRect.offsetMin = Vector2.zero;
-        viewportRect.offsetMax = new Vector2(-30f, 0f);
+        viewportRect.offsetMax = new Vector2(-24f, 0f);
 
         GameObject lessonContainer = new("LessonButtons", typeof(RectTransform), typeof(GridLayoutGroup));
         lessonContainer.transform.SetParent(viewport.transform, false);
@@ -174,9 +221,9 @@ public static class MainMenuSceneGenerator
         lessonContainerRect.anchoredPosition = Vector2.zero;
         lessonContainerRect.sizeDelta = Vector2.zero;
         GridLayoutGroup lessonLayout = lessonContainer.GetComponent<GridLayoutGroup>();
-        lessonLayout.padding = new RectOffset(8, 8, 8, 8);
-        lessonLayout.cellSize = new Vector2(590f, 196f);
-        lessonLayout.spacing = new Vector2(16f, 16f);
+        lessonLayout.padding = new RectOffset(6, 6, 8, 18);
+        lessonLayout.cellSize = new Vector2(560f, 206f);
+        lessonLayout.spacing = new Vector2(22f, 20f);
         lessonLayout.startCorner = GridLayoutGroup.Corner.UpperLeft;
         lessonLayout.startAxis = GridLayoutGroup.Axis.Horizontal;
         lessonLayout.childAlignment = TextAnchor.UpperCenter;
@@ -186,19 +233,21 @@ public static class MainMenuSceneGenerator
         lessonFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
         lessonFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
 
-        GameObject scrollbarObject = CreateImage("VerticalScrollbar", new Color(DeepTeal.r, DeepTeal.g, DeepTeal.b, 0.2f));
+        GameObject scrollbarObject = CreateImage("VerticalScrollbar", Soft);
+        Round(scrollbarObject);
         scrollbarObject.transform.SetParent(lessonScrollArea.transform, false);
         RectTransform scrollbarRect = scrollbarObject.GetComponent<RectTransform>();
         scrollbarRect.anchorMin = new Vector2(1f, 0f);
         scrollbarRect.anchorMax = Vector2.one;
         scrollbarRect.pivot = new Vector2(1f, 1f);
         scrollbarRect.anchoredPosition = Vector2.zero;
-        scrollbarRect.sizeDelta = new Vector2(20f, 0f);
+        scrollbarRect.sizeDelta = new Vector2(14f, 0f);
         Scrollbar scrollbar = scrollbarObject.AddComponent<Scrollbar>();
         GameObject slidingArea = new("SlidingArea", typeof(RectTransform));
         slidingArea.transform.SetParent(scrollbarObject.transform, false);
-        Stretch(slidingArea.GetComponent<RectTransform>(), 3f);
-        GameObject handle = CreateImage("Handle", Teal);
+        Stretch(slidingArea.GetComponent<RectTransform>(), 2f);
+        GameObject handle = CreateImage("Handle", Purple);
+        Round(handle);
         handle.transform.SetParent(slidingArea.transform, false);
         Stretch(handle.GetComponent<RectTransform>(), 0f);
         scrollbar.handleRect = handle.GetComponent<RectTransform>();
@@ -211,91 +260,125 @@ public static class MainMenuSceneGenerator
         lessonScrollRect.verticalScrollbar = scrollbar;
         lessonScrollRect.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.AutoHide;
 
-        GameObject briefing = CreateScreen("BriefingScreen", root.transform, DeepTeal);
-        GameObject briefingContent = CreateContent(briefing.transform, Paper);
-        VerticalLayoutGroup briefingLayout = AddVertical(briefingContent, 18f, 40f);
+        GameObject briefing = CreateScreen("BriefingScreen", root.transform, DeepBlue);
+        GameObject briefingContent = CreatePanel("Content", briefing.transform, CanvasColor, new Vector2(0.07f, 0.07f), new Vector2(0.93f, 0.93f));
+        Round(briefingContent);
+        AddShadow(briefingContent, new Color(0f, 0.18f, 0.29f, 0.24f), new Vector2(0f, -7f));
+        VerticalLayoutGroup briefingLayout = AddVertical(briefingContent, 16f, 48f);
         briefingLayout.childAlignment = TextAnchor.MiddleLeft;
-        FixedText("LESSON BRIEFING", briefingContent.transform, 17, FontStyle.Bold, Coral, TextAnchor.MiddleLeft, 30f);
-        Text briefingTitle = FixedText("Lesson title", briefingContent.transform, 46, FontStyle.Bold, Ink, TextAnchor.MiddleLeft, 66f);
-        Text briefingBody = FixedText("Lesson briefing", briefingContent.transform, 23, FontStyle.Normal, DeepTeal, TextAnchor.MiddleLeft, 140f);
-        GameObject objective = CreateImage("Objective", Cream);
+        FixedText("LESSON BRIEFING", briefingContent.transform, 14, FontStyle.Bold, Purple, TextAnchor.MiddleLeft, 26f);
+        Text briefingTitle = FixedText("Lesson title", briefingContent.transform, 44, FontStyle.Bold, DeepBlue, TextAnchor.MiddleLeft, 62f);
+        Text briefingBody = FixedText("Lesson briefing", briefingContent.transform, 21, FontStyle.Normal, Ink, TextAnchor.UpperLeft, 120f);
+        GameObject objective = CreateImage("Objective", Soft);
+        Round(objective);
         objective.transform.SetParent(briefingContent.transform, false);
-        AddLayout(objective, 100f);
-        Text objectiveText = CreateText("OBJECTIVE  /  Lesson objective", objective.transform, 19, FontStyle.Bold, Ink, TextAnchor.MiddleCenter);
-        Stretch(objectiveText.rectTransform, 20f);
+        AddLayout(objective, 92f);
+        HorizontalLayoutGroup objectiveLayout = AddHorizontal(objective, 16f, 0f);
+        objectiveLayout.padding = new RectOffset(0, 24, 14, 14);
+        objectiveLayout.childAlignment = TextAnchor.MiddleLeft;
+        GameObject objectiveAccent = CreateImage("Accent", Blue);
+        objectiveAccent.transform.SetParent(objective.transform, false);
+        AddLayout(objectiveAccent, 64f, 8f);
+        Text objectiveText = CreateText("OBJECTIVE  /  Lesson objective", objective.transform, 17, FontStyle.Bold, Ink, TextAnchor.MiddleLeft);
+        AddFlexible(objectiveText.gameObject, 1f);
         GameObject briefingActions = CreateHorizontalGroup("Actions", briefingContent.transform, 14f);
-        AddLayout(briefingActions, 64f);
-        Button briefingBack = CreateButton("BACK TO LESSONS", briefingActions.transform, Cream, DeepTeal, 64f);
+        AddFlexible(briefingActions, 1f);
+        briefingActions.GetComponent<HorizontalLayoutGroup>().childAlignment = TextAnchor.MiddleCenter;
+        Button briefingBack = CreateButton("BACK TO LESSONS", briefingActions.transform, Soft, Ink, 118f);
         AddFlexible(briefingBack.gameObject, 1f);
-        Button buildRules = CreateButton("BUILD RULES", briefingActions.transform, Coral, Color.white, 64f);
-        AddFlexible(buildRules.gameObject, 1.4f);
+        Button buildRules = CreateButton("BUILD RULES", briefingActions.transform, Blue, Ink, 118f);
+        AddFlexible(buildRules.gameObject, 1f);
 
-        GameObject builder = CreateScreen("RuleBuilderScreen", root.transform, Ink);
-        GameObject builderContent = CreatePanel("Content", builder.transform, new Color(1f, 1f, 1f, 0.97f), new Vector2(0.08f, 0.07f), new Vector2(0.92f, 0.93f));
-        VerticalLayoutGroup builderLayout = AddVertical(builderContent, 12f, 28f);
+        GameObject builder = CreateScreen("RuleBuilderScreen", root.transform, CanvasColor);
+        GameObject builderContent = CreatePanel("Content", builder.transform, Paper, new Vector2(0.055f, 0.055f), new Vector2(0.945f, 0.945f));
+        Round(builderContent);
+        AddShadow(builderContent, new Color(0.04f, 0.16f, 0.25f, 0.14f), new Vector2(0f, -6f));
+        VerticalLayoutGroup builderLayout = AddVertical(builderContent, 10f, 30f);
         builderLayout.childAlignment = TextAnchor.UpperLeft;
-        FixedText("MY RULES", builderContent.transform, 16, FontStyle.Bold, Teal, TextAnchor.MiddleLeft, 26f);
-        Text ruleBuilderTitle = FixedText("Build the action sequence", builderContent.transform, 38, FontStyle.Bold, Ink, TextAnchor.MiddleLeft, 52f);
-        FixedText("Add actions from the left. Use UP and DOWN to match the objective.", builderContent.transform, 19, FontStyle.Normal, DeepTeal, TextAnchor.MiddleLeft, 34f);
+        FixedText("MY RULES", builderContent.transform, 13, FontStyle.Bold, Purple, TextAnchor.MiddleCenter, 22f);
+        Text ruleBuilderTitle = FixedText("Build the action sequence", builderContent.transform, 38, FontStyle.Bold, DeepBlue, TextAnchor.MiddleCenter, 50f);
+        FixedText("Add actions from the left. Use UP and DOWN to match the objective.", builderContent.transform, 18, FontStyle.Normal, Muted, TextAnchor.MiddleCenter, 32f);
         GameObject columns = CreateHorizontalGroup("Columns", builderContent.transform, 18f);
         AddFlexible(columns, 1f);
 
-        GameObject availablePanel = CreateImage("AvailableRules", Cream);
+        GameObject availablePanel = CreateImage("AvailableRules", Soft);
+        Round(availablePanel);
         availablePanel.transform.SetParent(columns.transform, false);
-        AddFlexible(availablePanel, 1f);
+        AddFlexible(availablePanel, 0.72f);
         AddVertical(availablePanel, 9f, 18f).childAlignment = TextAnchor.UpperLeft;
-        FixedText("AVAILABLE ACTIONS", availablePanel.transform, 16, FontStyle.Bold, Teal, TextAnchor.MiddleLeft, 30f);
+        FixedText("AVAILABLE ACTIONS", availablePanel.transform, 14, FontStyle.Bold, Ink, TextAnchor.MiddleCenter, 28f);
         GameObject availableList = CreateVerticalGroup("AvailableList", availablePanel.transform, 8f);
         AddFlexible(availableList, 1f);
 
         GameObject selectedPanel = CreateImage("SelectedRules", Paper);
+        Round(selectedPanel);
+        AddOutline(selectedPanel, Blue, new Vector2(2f, -2f));
         selectedPanel.transform.SetParent(columns.transform, false);
-        AddFlexible(selectedPanel, 1.15f);
+        AddFlexible(selectedPanel, 1.42f);
         AddVertical(selectedPanel, 9f, 18f).childAlignment = TextAnchor.UpperLeft;
-        FixedText("YOUR SEQUENCE", selectedPanel.transform, 16, FontStyle.Bold, Coral, TextAnchor.MiddleLeft, 30f);
+        FixedText("YOUR SEQUENCE", selectedPanel.transform, 14, FontStyle.Bold, Blue, TextAnchor.MiddleCenter, 28f);
         GameObject selectedList = CreateVerticalGroup("SelectedList", selectedPanel.transform, 8f);
         AddFlexible(selectedList, 1f);
-        Text emptySelection = CreateText("No actions selected yet", selectedList.transform, 18, FontStyle.Italic, DeepTeal, TextAnchor.MiddleCenter);
+        Text emptySelection = CreateText("No actions selected yet", selectedList.transform, 18, FontStyle.Italic, Muted, TextAnchor.MiddleCenter);
         AddLayout(emptySelection.gameObject, 56f);
 
-        Text ruleFeedback = FixedText("Build the sequence, then press Check.", builderContent.transform, 18, FontStyle.Bold, DeepTeal, TextAnchor.MiddleLeft, 40f);
+        Text ruleFeedback = FixedText("Build the sequence, then press Check.", builderContent.transform, 17, FontStyle.Normal, Muted, TextAnchor.MiddleCenter, 34f);
         GameObject builderActions = CreateHorizontalGroup("Actions", builderContent.transform, 14f);
         AddLayout(builderActions, 62f);
-        Button builderBack = CreateButton("BACK TO BRIEFING", builderActions.transform, Cream, DeepTeal, 62f);
-        AddFlexible(builderBack.gameObject, 1f);
-        Button check = CreateButton("CHECK", builderActions.transform, Teal, Color.white, 62f);
-        AddFlexible(check.gameObject, 1.5f);
+        builderActions.GetComponent<HorizontalLayoutGroup>().childAlignment = TextAnchor.MiddleCenter;
+        GameObject actionSpacerLeft = new("SpacerLeft", typeof(RectTransform));
+        actionSpacerLeft.transform.SetParent(builderActions.transform, false);
+        AddFlexible(actionSpacerLeft, 1f);
+        Button builderBack = CreateButton("BACK TO BRIEFING", builderActions.transform, Soft, Ink, 58f, 250f);
+        Button check = CreateButton("CHECK", builderActions.transform, Purple, Color.white, 58f, 190f);
+        GameObject actionSpacerRight = new("SpacerRight", typeof(RectTransform));
+        actionSpacerRight.transform.SetParent(builderActions.transform, false);
+        AddFlexible(actionSpacerRight, 1f);
 
         GameObject gameplay = CreatePanel("GameplayHUD", root.transform, Color.clear, Vector2.zero, Vector2.one);
         gameplay.GetComponent<Image>().raycastTarget = false;
-        GameObject topBar = CreatePanel("TopBar", gameplay.transform, new Color(Ink.r, Ink.g, Ink.b, 0.94f), new Vector2(0.03f, 0.89f), new Vector2(0.97f, 0.975f));
+        GameObject topBar = CreatePanel("TopBar", gameplay.transform, new Color(1f, 1f, 1f, 0.96f), new Vector2(0.03f, 0.89f), new Vector2(0.97f, 0.975f));
+        Round(topBar);
+        AddShadow(topBar, new Color(0.02f, 0.1f, 0.16f, 0.2f), new Vector2(0f, -5f));
         HorizontalLayoutGroup topLayout = AddHorizontal(topBar, 14f, 18f);
         topLayout.childAlignment = TextAnchor.MiddleLeft;
-        Text liveLabel = CreateText("LESSON  /  LIVE CHECK", topBar.transform, 17, FontStyle.Bold, Aqua, TextAnchor.MiddleLeft);
+        GameObject liveAccent = CreateImage("LiveAccent", Blue);
+        liveAccent.transform.SetParent(topBar.transform, false);
+        AddLayout(liveAccent, 52f, 8f);
+        Text liveLabel = CreateText("LESSON  /  LIVE CHECK", topBar.transform, 17, FontStyle.Bold, DeepBlue, TextAnchor.MiddleLeft);
         AddFlexible(liveLabel.gameObject, 1f);
-        Text progress = CreateText("0 / 4 steps complete", topBar.transform, 19, FontStyle.Bold, Color.white, TextAnchor.MiddleRight);
+        Text progress = CreateText("0 / 4 steps complete", topBar.transform, 19, FontStyle.Bold, Ink, TextAnchor.MiddleRight);
         AddLayout(progress.gameObject, 50f, 360f);
-        GameObject feedbackPanel = CreatePanel("Feedback", gameplay.transform, new Color(DeepTeal.r, DeepTeal.g, DeepTeal.b, 0.95f), new Vector2(0.26f, 0.055f), new Vector2(0.74f, 0.13f));
-        Text gameplayFeedback = CreateText("The family is getting ready...", feedbackPanel.transform, 20, FontStyle.Bold, Cream, TextAnchor.MiddleCenter);
+        GameObject feedbackPanel = CreatePanel("Feedback", gameplay.transform, new Color(1f, 1f, 1f, 0.96f), new Vector2(0.24f, 0.045f), new Vector2(0.76f, 0.13f));
+        Round(feedbackPanel);
+        AddOutline(feedbackPanel, Blue, new Vector2(2f, -2f));
+        AddShadow(feedbackPanel, new Color(0.02f, 0.1f, 0.16f, 0.22f), new Vector2(0f, -5f));
+        Text gameplayFeedback = CreateText("The family is getting ready...", feedbackPanel.transform, 20, FontStyle.Bold, DeepBlue, TextAnchor.MiddleCenter);
         Stretch(gameplayFeedback.rectTransform, 18f);
 
-        GameObject result = CreateScreen("ResultScreen", root.transform, new Color(Ink.r, Ink.g, Ink.b, 0.98f));
-        GameObject resultContent = CreateContent(result.transform, Paper);
-        VerticalLayoutGroup resultLayout = AddVertical(resultContent, 18f, 40f);
+        GameObject result = CreateScreen("ResultScreen", root.transform, Cream);
+        CreatePanel("LeftAccent", result.transform, Hex("5ED0C4"), new Vector2(0.045f, 0.39f), new Vector2(0.35f, 0.65f));
+        CreatePanel("RightAccent", result.transform, Hex("F33022"), new Vector2(0.65f, 0.18f), new Vector2(0.955f, 0.57f));
+        GameObject resultContent = CreatePanel("Content", result.transform, CanvasColor, new Vector2(0.18f, 0.17f), new Vector2(0.82f, 0.83f));
+        Round(resultContent);
+        AddShadow(resultContent, new Color(0.18f, 0.13f, 0.05f, 0.18f), new Vector2(0f, -8f));
+        VerticalLayoutGroup resultLayout = AddVertical(resultContent, 14f, 48f);
         resultLayout.childAlignment = TextAnchor.MiddleCenter;
-        FixedText("LEVEL COMPLETE", resultContent.transform, 18, FontStyle.Bold, Success, TextAnchor.MiddleCenter, 32f);
-        Text resultTitle = FixedText("Lesson complete", resultContent.transform, 50, FontStyle.Bold, Ink, TextAnchor.MiddleCenter, 72f);
-        Text resultSummary = FixedText("Every essential item was packed in the planned order.", resultContent.transform, 23, FontStyle.Normal, DeepTeal, TextAnchor.MiddleCenter, 110f);
-        GameObject badge = CreateImage("SuccessBadge", Aqua);
+        FixedText("LEVEL COMPLETE", resultContent.transform, 14, FontStyle.Bold, Purple, TextAnchor.MiddleCenter, 26f);
+        Text resultTitle = FixedText("Lesson complete", resultContent.transform, 45, FontStyle.Bold, DeepBlue, TextAnchor.MiddleCenter, 64f);
+        Text resultSummary = FixedText("Every essential item was packed in the planned order.", resultContent.transform, 20, FontStyle.Normal, Ink, TextAnchor.MiddleCenter, 74f);
+        GameObject badge = CreateImage("SuccessBadge", Success);
+        Round(badge);
         badge.transform.SetParent(resultContent.transform, false);
-        AddLayout(badge, 88f, 360f);
-        Text badgeText = CreateText("RULES VERIFIED", badge.transform, 21, FontStyle.Bold, Ink, TextAnchor.MiddleCenter);
+        AddLayout(badge, 72f, 740f);
+        Text badgeText = CreateText("RULES VERIFIED", badge.transform, 18, FontStyle.Bold, Ink, TextAnchor.MiddleCenter);
         Stretch(badgeText.rectTransform, 12f);
         GameObject resultActions = CreateHorizontalGroup("Actions", resultContent.transform, 14f);
-        AddLayout(resultActions, 64f);
-        Button backToLessons = CreateButton("BACK TO LESSONS", resultActions.transform, Cream, DeepTeal, 64f);
+        AddFlexible(resultActions, 1f);
+        resultActions.GetComponent<HorizontalLayoutGroup>().childAlignment = TextAnchor.MiddleCenter;
+        Button backToLessons = CreateButton("BACK TO LESSONS", resultActions.transform, Soft, Ink, 70f);
         AddFlexible(backToLessons.gameObject, 1f);
-        Button playAgain = CreateButton("PLAY AGAIN", resultActions.transform, Coral, Color.white, 64f);
+        Button playAgain = CreateButton("PLAY AGAIN", resultActions.transform, Blue, Ink, 70f);
         AddFlexible(playAgain.gameObject, 1f);
 
         GameFlowView view = root.GetComponent<GameFlowView>();
@@ -420,10 +503,22 @@ public static class MainMenuSceneGenerator
         return text;
     }
 
-    private static Button CreateButton(string label, Transform parent, Color background, Color foreground, float height, float width = -1f)
+    private static Button CreateButton(
+        string label,
+        Transform parent,
+        Color background,
+        Color foreground,
+        float height,
+        float width = -1f,
+        bool rounded = true)
     {
         GameObject root = CreateImage(label + "Button", background);
         root.transform.SetParent(parent, false);
+        if (rounded)
+        {
+            Round(root);
+            AddShadow(root, new Color(0.04f, 0.15f, 0.24f, 0.2f), new Vector2(0f, -4f));
+        }
         Button button = root.AddComponent<Button>();
         ConfigureButtonColors(button, background);
         Text text = CreateText(label, root.transform, 17, FontStyle.Bold, foreground, TextAnchor.MiddleCenter);
@@ -440,6 +535,30 @@ public static class MainMenuSceneGenerator
         colors.pressedColor = Color.Lerp(background, Color.black, 0.12f);
         colors.disabledColor = new Color(background.r, background.g, background.b, 0.35f);
         button.colors = colors;
+    }
+
+    private static void Round(GameObject target)
+    {
+        Image image = target.GetComponent<Image>();
+        if (image == null || roundedSprite == null) return;
+        image.sprite = roundedSprite;
+        image.type = Image.Type.Sliced;
+    }
+
+    private static void AddShadow(GameObject target, Color color, Vector2 distance)
+    {
+        Shadow shadow = target.AddComponent<Shadow>();
+        shadow.effectColor = color;
+        shadow.effectDistance = distance;
+        shadow.useGraphicAlpha = true;
+    }
+
+    private static void AddOutline(GameObject target, Color color, Vector2 distance)
+    {
+        Outline outline = target.AddComponent<Outline>();
+        outline.effectColor = color;
+        outline.effectDistance = distance;
+        outline.useGraphicAlpha = true;
     }
 
     private static GameObject CreateVerticalGroup(string name, Transform parent, float spacing)
@@ -498,6 +617,7 @@ public static class MainMenuSceneGenerator
     {
         LayoutElement element = target.GetComponent<LayoutElement>() ?? target.AddComponent<LayoutElement>();
         element.preferredHeight = height;
+        element.flexibleHeight = 0f;
         if (width >= 0f) element.preferredWidth = width;
     }
 
@@ -506,6 +626,13 @@ public static class MainMenuSceneGenerator
         LayoutElement element = target.GetComponent<LayoutElement>() ?? target.AddComponent<LayoutElement>();
         element.flexibleWidth = width;
         element.flexibleHeight = 1f;
+    }
+
+    private static void AddFlexibleWidth(GameObject target, float width)
+    {
+        LayoutElement element = target.GetComponent<LayoutElement>() ?? target.AddComponent<LayoutElement>();
+        element.flexibleWidth = width;
+        element.flexibleHeight = 0f;
     }
 
     private static void Stretch(RectTransform rect, float padding)

@@ -63,6 +63,8 @@ Current authored assets:
 | `Assets/Scenes/MainMenu.unity` | Serialized controller, UI prefab instance, camera, and EventSystem |
 | `Assets/Scenes/SampleScene.unity` | Serialized controller and UI prefab instance alongside existing simulation objects |
 
+The current visual baseline follows the approved Figma flow: a light `HERO READY` lesson grid, blue lesson briefing, two-column rule editor, compact numbered sequence rows, floating gameplay status/feedback, and the light level-complete card. Colors, backgrounds, labels, spacing, and button visuals remain editable on the authored prefab objects in the Inspector. `SelectedRuleRow.prefab` keeps the sequence number and action label as separate serialized text components so the number badge can be styled independently without changing rule ids or controller logic.
+
 Current authored lesson data:
 
 | Asset | Responsibility |
