@@ -1,4 +1,4 @@
-using UnityEngine;
+using System.Collections.Generic;
 
 public interface ISimulationMode 
 {
@@ -7,4 +7,9 @@ public interface ISimulationMode
     void OnSimulationEnd();
     void Cleanup();
 
+}
+
+public interface IConfiguredSequenceMode : ISimulationMode
+{
+    void PlayConfiguredSequence(IReadOnlyList<string> animationNames);
 }

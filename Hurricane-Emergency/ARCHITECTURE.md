@@ -1,6 +1,6 @@
 # Hurricane Emergency Simulation: Current Architecture
 
-_Current checkout snapshot: 2026-08-19_
+_Current checkout snapshot: 2026-08-20 (post-refactor)_
 
 ## Document Role
 
@@ -23,7 +23,7 @@ This file is the source of truth for the architecture that exists in the Unity p
 | UI | UGUI `2.0.0` and TextMesh Pro assets |
 | Browser integration | `Assets/Plugins/Web.jslib` through `WebGLBridge` |
 | Main coordinator | `SimulationManager` |
-| Mode lifecycle | `ISimulationMode` |
+| Mode lifecycle | `ISimulationMode` plus optional `IConfiguredSequenceMode` |
 
 Other scene assets exist, but they are not enabled in Build Settings:
 
@@ -40,6 +40,51 @@ Unity now owns ten lesson flows: House, Cleaning Garden, Supermarket, Children R
 After `Check`, `LessonLaunchContext` stores the selected level id and rule ids in order and loads `SampleScene.unity`. The gameplay scene restores that selection, starts the matching mode through `SimulationManager`, listens to `SimulationEventChannel`, displays runtime feedback, and shows the result screen. The existing mode scripts and animation controllers remain responsible for visual behavior. House, Cleaning Garden, and Supermarket use local sequence adapters around their existing public actions; the adapters do not replace their animation logic. The player-facing Children Room lesson intentionally maps to the existing `ModeName.ChildrenRoom` mode and `Children room` scene root.
 
 `SampleScene.unity` still contains all simulation lesson roots and switches between them by `ModeName`; it is not duplicated per lesson.
+
+## Post-Refactor Structure
+
+The refactor keeps scene behavior inside the existing mode components while moving only reusable mechanics into focused helpers. No Animator trigger, animation event method, WebGL callback name, lesson command, serialized field, timing, coordinate, or prefab hierarchy was intentionally changed.
+
+```text
+LevelDefinition / LessonRuleItemCatalog
+                 |
+                 v
+GameFlowController ---------> GameFlowView + authored UI prefabs
+        |                                |
+        | selected mode and commands     | presentation only
+        v                                v
+SimulationManager ----------> GameModeUIController
+        |
+        v
+ISimulationMode
+        |
+        +--> IConfiguredSequenceMode (only modes that accept a local rule sequence)
+        |
+        +--> mode-owned scenario coroutines, Animator calls, timers and object swaps
+                 |
+                 +--> SequentialAnimationQueue<T> for callback-based FIFO execution
+                 +--> CharacterMotion for shared movement/facing behavior
+                 +--> RoomObjectActivation for shared room-item lookup and toggling
+                 |
+                 v
+WebGLBridge.SendEvent
+        |
+        +--> SimulationEventChannel --> LevelSessionController --> runtime feedback/result UI
+        |
+        +--> Web.jslib in WebGL builds
+```
+
+### Shared runtime helpers
+
+| Helper | Responsibility | Deliberate boundary |
+| --- | --- | --- |
+| `Assets/Scripts/Animation/SequentialAnimationQueue.cs` | Parses enum command names, optionally rejects duplicate queued/current actions, and executes `Action<Action>` animations one at a time | It does not know lesson correctness, UI, Animator parameters, timing, or event names |
+| `Assets/Scripts/Animation/CharacterMotion.cs` | Preserves the common MoveTowards loop, stop distance, final snap, sprite-facing scale sign, and uniform-scale operation used by the packing lessons | Target positions and speeds remain authored by each mode |
+| `Assets/Scripts/Animation/RoomObjectActivation.cs` | Finds a named `RoomTakesObjects` entry and activates or deactivates it | Object names and the moment of each swap remain owned by the mode coroutine |
+
+`AfterTheHurricane`, `Shelter`, `ChildrenRoom`, `GardenView`, `ClearingGarden`, `GoBagLesson`, `KitchenLesson`, `BathRoomLesson`, and the legacy `SuperMarket` command path use `SequentialAnimationQueue<T>` where their previous implementation had the same callback-based FIFO semantics. `House` keeps its specialized timed lesson queue because its steps have action-specific waits and transition suppression. The configured `SuperMarket` sequence also remains mode-specific because it includes arrival setup and distractor feedback. These exceptions are intentional behavior-preservation boundaries, not missed generic conversions.
+
+`GameFlowController` resolves any local sequence-capable mode through `IConfiguredSequenceMode`; adding another compatible lesson no longer requires a mode-specific switch case. `SimulationManager.GetMode(ModeName)` is the non-generic registry entry used for this resolution.
 
 ## UI Authoring Constraint
 
@@ -79,6 +124,7 @@ Current authored lesson data:
 | `Assets/Data/Lessons/GardenViewLesson.asset` | Garden View copy, mode, required enum items, distractors, thumbnail, and opening events |
 | `Assets/Data/Lessons/ShelterLesson.asset` | Shelter copy, mode, required enum items, distractors, thumbnail, and opening events |
 | `Assets/Data/Lessons/AfterTheHurricaneLesson.asset` | After the Hurricane copy, mode, required enum items, distractors, thumbnail, and opening events |
+| `Assets/Data/Lessons/BathroomLesson.asset` | Bathroom copy, mode, required enum items, distractors, thumbnail, and opening events |
 
 `LevelDefinition` does not serialize animation command strings or duplicate runtime rule records. Designers choose the correct ordered items and distractors through `LessonRuleItem` enum lists. `LessonRuleItemCatalog` maps each enum value to the existing mode command, stable rule id, label, and completion event. A mode mismatch or duplicate item is reported as a configuration error. The catalog order follows the course flow: House, Cleaning Garden, Supermarket, Children Room, Garden View, Shelter, After the Hurricane, Go Bag, Kitchen, and Bathroom.
 
@@ -97,8 +143,8 @@ SimulationManager.SwitchMode(ModeName)
 ISimulationMode lifecycle   GameModeUIController
        |                       |
        v                       v
-Mode-specific animation    Enable selected content root
-queues, timers and objects
+Mode-specific scenarios    Enable selected content root
+plus shared helpers
                |
                v
 Animation events / completed coroutines
@@ -155,6 +201,14 @@ void Cleanup();
 
 The lifecycle is only partially implemented across modes. Several `Cleanup()` methods only log or are empty, but `GardenViewMode.Cleanup()` now clears its timers, queues, and scene state so mode transitions do not throw.
 
+Modes that can execute the ordered commands selected in the Unity rule builder also implement:
+
+```csharp
+void PlayConfiguredSequence(IReadOnlyList<string> animationNames);
+```
+
+This capability is expressed by `IConfiguredSequenceMode` rather than a mode-name switch. `BathRoomLesson` currently remains lifecycle-only because the existing Unity flow does not launch a configured bathroom sequence through this contract; its legacy public queue entry point is unchanged.
+
 ### `GameModeFactory`
 
 Path: `Assets/Scripts/Modes/GameModeFactory.cs`
@@ -185,7 +239,7 @@ Current scene configuration:
 | `9` | `KitchenLesson` | `Kitchen Lesson 10` |
 | `10` | `BathRoomLesson` | `BathroomLesson 11` |
 
-The future main menu needs a root assigned to `EntryScreen` or a separate flow-level UI controller that is deliberately kept outside this list.
+The Unity-native main menu deliberately lives in `MainMenu.unity` outside this mode-root list, so `EntryScreen` does not require a gameplay root.
 
 ### `ObjectsHolder`
 
@@ -237,7 +291,7 @@ Current status:
 - no UI root is assigned in `GameModeUIController`;
 - not mapped by `ObjectsHolder.SetScineIndex`.
 
-This is the natural host mode for the future Unity-native main menu, but it is currently only a placeholder.
+The Unity-native main menu is owned by `MainMenu.unity` and `GameFlowController`; `EntryScreenMod` remains only a legacy placeholder.
 
 ### `House`
 
@@ -441,7 +495,7 @@ Known outbound events:
 - `PackBook`
 - browser-specific `GivesReminder(kelanParentsId)` callback.
 
-Several distractor actions intentionally send `Events.Empty`, including current ball, lamp, coloring-book, scissors, and candles paths. The future validator must define whether `Empty` means incorrect, ignored, or missing event coverage.
+Several distractor actions intentionally send `Events.Empty`, including current ball, lamp, coloring-book, scissors, and candles paths. `RuntimeStepEvaluator` treats `Empty` as an incorrect action without advancing progress.
 
 ### `KitchenLesson`
 
@@ -518,7 +572,7 @@ PackFirstAid, PackToothbrush, PackWipes, PackSoap
 
 `EventsManager` exposes animation-event-friendly methods for the older event subset. Newer modes usually call `WebGLBridge.SendEvent(...)` directly.
 
-There is no Unity-side subscriber event today. Sending an event informs WebGL or logs in the Editor, but native Unity gameplay validation cannot listen to it without the event layer proposed in `MB_IMPLEMENTATION_PLAN.md`.
+`WebGLBridge.SendEvent` first raises `SimulationEventChannel.EventRaised` locally and then forwards the same event to JavaScript in a WebGL player. `LevelSessionController` subscribes only for the active mode, passes known `Events` values to `RuntimeStepEvaluator`, and reports correct, incorrect, out-of-order, duplicate, ignored, and completed results to `GameFlowController`. This keeps Unity validation local without breaking the browser compatibility output.
 
 ### Browser callback surface
 
@@ -575,10 +629,10 @@ This is repository evidence only. It does not prove that every reference, Animat
 
 ## Current Architectural Constraints
 
-These are facts to account for during implementation, not a request to refactor them immediately.
+These are current boundaries to account for during future work.
 
 1. Mode scripts directly own scene references, positions, Animator triggers, timers, queues, and object swaps.
-2. Several modes independently implement similar queue/dictionary/callback patterns.
+2. Callback-based FIFO mechanics are centralized in `SequentialAnimationQueue<T>`; mode-specific action maps and scenario orchestration remain in each mode.
 3. Browser command strings, enum names, Animator names, and object names are used as runtime identifiers.
 4. Outbound events are emitted from multiple layers: modes, animation event receivers, and object-swap helpers.
 5. Event coverage is incomplete; several selectable actions emit `Events.Empty`.
@@ -586,13 +640,13 @@ These are facts to account for during implementation, not a request to refactor 
 7. `GardenViewMode.Cleanup()` now performs a safe reset during a normal mode transition.
 8. `EntryScreenMod` remains unused; the Unity-native menu is owned by `MainMenu.unity` and `GameFlowController`.
 9. `LevelCatalog.asset` and its referenced `LevelDefinition` assets are the source of truth for all ten lesson objectives, accepted enum items, distractors, thumbnails, and runtime event order.
-10. `SimulationEventChannel` exposes completed gameplay actions to the active Unity lesson session while preserving WebGL output.
+10. `SimulationEventChannel` exposes completed gameplay actions to `LevelSessionController` while preserving WebGL output.
 11. The Editor currently auto-selects `House` from the serialized `newMode` value before the Unity-native gameplay flow switches to the selected lesson.
 12. `SimulationManager.ResetSimulatiom()` reloads the entire scene rather than resetting one level session.
 
-## Missing Product Definitions
+## Remaining Product Decisions
 
-The code architecture is understandable enough to begin building the framework. What is still needed to author the actual levels correctly is product/content data:
+The framework and ten current lesson assets are implemented. Further content expansion still requires product decisions such as:
 
 1. Final lesson order and grouping. Confirm whether modes `1` through `11` are one continuous course and how the three Go Bag lessons relate to the earlier simulation.
 2. A title, briefing, and learning objective for every selectable level.
@@ -606,21 +660,21 @@ The code architecture is understandable enough to begin building the framework. 
 10. Required UI languages and final copy. Stable ids can be implemented before localization, but final layout depends on the actual text.
 11. Approved visual assets for menu cards, rule cards, feedback, and result screens.
 
-The framework can be implemented with temporary data before all copy and assets are final. However, the rule definitions and completion criteria must be approved per level before that level can be considered complete.
+Existing assets provide the current working defaults. Final rule definitions, copy, visual assets, and completion policy should still be approved per level before production release.
 
-## Safe Implementation Boundary
+## Refactoring Boundary
 
-The first implementation should add orchestration around the current simulation:
+Future cleanup should follow the same behavior-first rule:
 
-- menu and briefing choose a `LevelDefinition`;
-- rule builder lets the player assemble any selected sequence;
-- `Check` starts the lesson without pre-start validation;
-- existing mode methods continue to execute every animation and object transition;
-- a compatibility reporter mirrors existing completion callbacks into a Unity event channel while preserving WebGL calls;
-- a session controller evaluates progress and opens feedback/result UI;
-- repeated queue and animation code remains untouched until the full flow is accepted.
+- keep scene references and permanent UI serialized in scenes or prefabs;
+- keep lesson content in `LevelDefinition` and enum-backed catalogs rather than mode switches;
+- place reusable mechanics in narrow helpers that do not know about a specific lesson;
+- keep unique animation order, timing, Animator calls, event fallback rules, and transition conditions inside the owning mode;
+- preserve every public WebGL/animation-event method unless all serialized and browser callers have been migrated;
+- do not replace special House or Supermarket runners with a generic abstraction unless Play Mode comparison proves identical behavior;
+- add a focused interface when flow code needs a capability, rather than switching on `ModeName` and casting each concrete class.
 
-This boundary allows the requested native Unity system to be built without changing how the current animations work.
+This keeps later extension straightforward without turning the mode scripts into one high-coupling base class.
 
 ## Verification Rules
 

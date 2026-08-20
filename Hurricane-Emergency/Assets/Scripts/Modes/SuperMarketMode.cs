@@ -17,7 +17,7 @@ public enum AnimationsInSuper
     WayToSupermarketAnimation
 }
 
-public class SuperMarketMode : MonoBehaviour, ISimulationMode
+public class SuperMarketMode : MonoBehaviour, IConfiguredSequenceMode
 {
     [SerializeField] private GameObject wayToSupermarket; // Reference to the second animation GameObject  
     [SerializeField] private GameObject supermarketMainObject; // Reference to the second animation GameObject
@@ -29,10 +29,7 @@ public class SuperMarketMode : MonoBehaviour, ISimulationMode
     private Animator animator;
     public AnimationsInSuper animationToPlay; // Variable to specify which animation to play
 
-    private readonly Queue<AnimationsInSuper> animationQueue = new();
-    private bool isPlaying;
-    private bool currentAnimationFinished;
-    private AnimationsInSuper? currentQueuedAnimation;
+    private SequentialAnimationQueue<AnimationsInSuper> animationQueue;
 
     private Dictionary<AnimationsInSuper, Action<Action>> animationMap;
 
@@ -59,6 +56,7 @@ public class SuperMarketMode : MonoBehaviour, ISimulationMode
             { AnimationsInSuper.Announcement, PlayRadioAnnouncement },
             { AnimationsInSuper.WayToSupermarketAnimation, WayToSupermarketAnimation }
         };
+        animationQueue = new SequentialAnimationQueue<AnimationsInSuper>(animationMap, true);
     }
     public void SuperQueueAnimation(string animationName) // This method can be called to add animations to the queue from the web interface
     {
@@ -70,24 +68,19 @@ public class SuperMarketMode : MonoBehaviour, ISimulationMode
             return;
         }
 
-        animationName = animationName.Trim();
-
-        if (Enum.TryParse(animationName, true, out AnimationsInSuper animation) &&
-            Enum.IsDefined(typeof(AnimationsInSuper), animation))
+        AnimationEnqueueResult result = animationQueue.Enqueue(animationName, out AnimationsInSuper animation);
+        if (result == AnimationEnqueueResult.Added)
         {
-            if (currentQueuedAnimation == animation || animationQueue.Contains(animation))
-            {
-                Debug.Log($"Animation already queued or playing: {animation}");
-                return;
-            }
-
-            animationQueue.Enqueue(animation);
             Debug.Log($"Animation added to queue: {animation}");
 
-            if (!isPlaying)
+            if (animationQueue.NeedsProcessing)
             {
                 StartCoroutine(ProcessQueue());
             }
+        }
+        else if (result == AnimationEnqueueResult.Duplicate)
+        {
+            Debug.Log($"Animation already queued or playing: {animation}");
         }
         else
         {
@@ -134,34 +127,9 @@ public class SuperMarketMode : MonoBehaviour, ISimulationMode
 
     private IEnumerator ProcessQueue()
     {
-        isPlaying = true;
-
-        while (animationQueue.Count > 0)
-        {
-            AnimationsInSuper nextAnimation = animationQueue.Dequeue();
-            currentQueuedAnimation = nextAnimation;
-
-            if (animationMap.TryGetValue(nextAnimation, out var startAnimation))
-            {
-                currentAnimationFinished = false;
-
-                startAnimation(() =>
-                {
-                    Debug.Log("Animation finished: " + nextAnimation);
-                    currentAnimationFinished = true;
-                });
-
-                yield return new WaitUntil(() => currentAnimationFinished);
-            }
-            else
-            {
-                Debug.LogWarning("No function for animation: " + nextAnimation);
-            }
-
-            currentQueuedAnimation = null;
-        }
-
-        isPlaying = false;
+        yield return animationQueue.Process(
+            next => Debug.Log("Animation finished: " + next),
+            next => Debug.LogWarning("No function for animation: " + next));
     }
 
 

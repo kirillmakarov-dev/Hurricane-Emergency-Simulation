@@ -53,7 +53,7 @@ public enum AfterHurricaneAnimations
     MotherCutWood
 }
 
-public class AfterTheHurricane : MonoBehaviour, ISimulationMode
+public class AfterTheHurricane : MonoBehaviour, IConfiguredSequenceMode
 {
     [SerializeField] private Animator fatherAnimator;
     [SerializeField] private Animator kelanAnimator;
@@ -73,10 +73,7 @@ public class AfterTheHurricane : MonoBehaviour, ISimulationMode
     public float timer = 5f;
     public bool simulationStart = false;
 
-    private readonly Queue<AfterHurricaneAnimations> animationQueue = new();
-    private bool isPlaying;
-    private bool currentAnimationFinished;
-    private AfterHurricaneAnimations? currentQueuedAnimation;
+    private SequentialAnimationQueue<AfterHurricaneAnimations> animationQueue;
     private Coroutine configuredSequenceCoroutine;
 
     private Dictionary<AfterHurricaneAnimations, Action<Action>> animationMap;
@@ -86,10 +83,7 @@ public class AfterTheHurricane : MonoBehaviour, ISimulationMode
         // cleanup after the hurricane mode state
         configuredSequenceCoroutine = null;
         StopAllCoroutines();
-        animationQueue.Clear();
-        isPlaying = false;
-        currentAnimationFinished = false;
-        currentQueuedAnimation = null;
+        animationQueue?.Clear();
         simulationStart = false;
         if (fatherAnimator != null) fatherAnimator.gameObject.SetActive(false);
         if (kelanAnimator != null) kelanAnimator.gameObject.SetActive(false);
@@ -154,9 +148,6 @@ public class AfterTheHurricane : MonoBehaviour, ISimulationMode
 
         StopAllCoroutines();
         animationQueue.Clear();
-        isPlaying = false;
-        currentAnimationFinished = false;
-        currentQueuedAnimation = null;
         simulationStart = false;
 
         if (fatherAnimator != null) fatherAnimator.gameObject.SetActive(true);
@@ -201,21 +192,19 @@ public class AfterTheHurricane : MonoBehaviour, ISimulationMode
             { AfterHurricaneAnimations.FatherPicksUpBrockenGlass, FatherPicksUpBrockenGlass },
             { AfterHurricaneAnimations.FatherPicksUpElectricWires, FatherPicksUpElectricWires },
         };
+        animationQueue = new SequentialAnimationQueue<AfterHurricaneAnimations>(animationMap, true);
     }
 
 
     public void AfterHurricaneQueueAnimation(string animationName)
     {
         if (string.IsNullOrWhiteSpace(animationName)) return;
-        animationName = animationName.Trim();
-        if (Enum.TryParse(animationName, true, out AfterHurricaneAnimations animation) &&
-            Enum.IsDefined(typeof(AfterHurricaneAnimations), animation))
+        AnimationEnqueueResult result = animationQueue.Enqueue(animationName, out _);
+        if (result == AnimationEnqueueResult.Added)
         {
-            if (currentQueuedAnimation == animation || animationQueue.Contains(animation)) return;
-            animationQueue.Enqueue(animation);
-            if (!isPlaying) StartCoroutine(ProcessQueue());
+            if (animationQueue.NeedsProcessing) StartCoroutine(ProcessQueue());
         }
-        else
+        else if (result == AnimationEnqueueResult.InvalidName)
         {
             Debug.LogWarning($"No such after hurricane animation: {animationName}");
         }
@@ -225,24 +214,8 @@ public class AfterTheHurricane : MonoBehaviour, ISimulationMode
     private IEnumerator ProcessQueue()
     {
         Debug.Log("Processing after hurricane animation queue...");
-        isPlaying = true;
-        while (animationQueue.Count > 0)
-        {
-            AfterHurricaneAnimations next = animationQueue.Dequeue();
-            currentQueuedAnimation = next;
-            if (animationMap.TryGetValue(next, out var startAnimation))
-            {
-                currentAnimationFinished = false;
-                startAnimation(() => { currentAnimationFinished = true; });
-                yield return new WaitUntil(() => currentAnimationFinished);
-            }
-            else
-            {
-                Debug.LogWarning("No function for after hurricane animation: " + next);
-            }
-            currentQueuedAnimation = null;
-        }
-        isPlaying = false;
+        yield return animationQueue.Process(
+            onMissingAction: next => Debug.LogWarning("No function for after hurricane animation: " + next));
     }
 
     public void PicksUpBranches(Action onComplete)

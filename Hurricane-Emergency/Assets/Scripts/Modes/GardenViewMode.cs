@@ -3,23 +3,8 @@ using System;
 using UnityEngine;
 using System.Collections.Generic;
 
-public class GardenViewMode : MonoBehaviour, ISimulationMode
+public class GardenViewMode : MonoBehaviour, IConfiguredSequenceMode
 {
-
-    private sealed class AnimationQueueState
-    {
-        public AnimationQueueState(string playerName, Dictionary<Animations, Action<Action>> animationMap)
-        {
-            PlayerName = playerName;
-            AnimationMap = animationMap;
-        }
-
-        public string PlayerName { get; }
-        public Dictionary<Animations, Action<Action>> AnimationMap { get; }
-        public Queue<Animations> Queue { get; } = new();
-        public bool IsPlaying { get; set; }
-    }
-
     public static GardenViewMode Instance { get; private set; }
     public bool checkanimation = false;
 
@@ -33,8 +18,8 @@ public class GardenViewMode : MonoBehaviour, ISimulationMode
 
     private Dictionary<Animations, Action<Action>> kelanAnimationMap;
     private Dictionary<Animations, Action<Action>> keyAnimationMap;
-    private AnimationQueueState kelanQueueState;
-    private AnimationQueueState keyQueueState;
+    private SequentialAnimationQueue<Animations> kelanQueueState;
+    private SequentialAnimationQueue<Animations> keyQueueState;
     private Coroutine configuredSequenceCoroutine;
     public Animations animationToPlay; // Variable to specify which animation to play
 
@@ -53,13 +38,11 @@ public class GardenViewMode : MonoBehaviour, ISimulationMode
         StopAllCoroutines();
         if (kelanQueueState != null)
         {
-            kelanQueueState.Queue.Clear();
-            kelanQueueState.IsPlaying = false;
+            kelanQueueState.Clear();
         }
         if (keyQueueState != null)
         {
-            keyQueueState.Queue.Clear();
-            keyQueueState.IsPlaying = false;
+            keyQueueState.Clear();
         }
 
         timerRun = false;
@@ -106,13 +89,11 @@ public class GardenViewMode : MonoBehaviour, ISimulationMode
         StopAllCoroutines();
         if (kelanQueueState != null)
         {
-            kelanQueueState.Queue.Clear();
-            kelanQueueState.IsPlaying = false;
+            kelanQueueState.Clear();
         }
         if (keyQueueState != null)
         {
-            keyQueueState.Queue.Clear();
-            keyQueueState.IsPlaying = false;
+            keyQueueState.Clear();
         }
 
         timerRun = false;
@@ -208,27 +189,29 @@ public class GardenViewMode : MonoBehaviour, ISimulationMode
 
     public void AddKelanAnimationFromWeb(string animationName) // This method can be called to add animations to the queue from the web interface
     {
-        EnqueueAnimationFromWeb(animationName, kelanQueueState);
+        EnqueueAnimationFromWeb(animationName, kelanQueueState, "Kelan");
     }
 
 
     public void AddKeyAnimationFromWeb(string animationName) // This method can be called to add animations to the queue from the web interface
     {
-        EnqueueAnimationFromWeb(animationName, keyQueueState);
+        EnqueueAnimationFromWeb(animationName, keyQueueState, "Key");
     }
 
-    private void EnqueueAnimationFromWeb(string animationName, AnimationQueueState queueState)
+    private void EnqueueAnimationFromWeb(
+        string animationName,
+        SequentialAnimationQueue<Animations> queueState,
+        string playerName)
     {
-        Debug.Log($"added animation from web for {queueState.PlayerName}: {animationName}");
+        Debug.Log($"added animation from web for {playerName}: {animationName}");
 
         if (string.IsNullOrWhiteSpace(animationName))
         {
-            Debug.LogWarning($"Empty animation name for {queueState.PlayerName}");
+            Debug.LogWarning($"Empty animation name for {playerName}");
             return;
         }
 
         animationName = animationName.Trim();
-
         if (!Enum.TryParse(animationName, true, out Animations animation) ||
             !Enum.IsDefined(typeof(Animations), animation))
         {
@@ -236,48 +219,28 @@ public class GardenViewMode : MonoBehaviour, ISimulationMode
             return;
         }
 
-        if (!queueState.AnimationMap.ContainsKey(animation))
+        if (!queueState.HasAction(animation))
         {
-            Debug.LogWarning($"Animation {animation} is not supported for {queueState.PlayerName}");
+            Debug.LogWarning($"Animation {animation} is not supported for {playerName}");
             return;
         }
 
-        queueState.Queue.Enqueue(animation);
-        Debug.Log($"Animation added to {queueState.PlayerName} queue: {animation}");
+        queueState.Enqueue(animation);
+        Debug.Log($"Animation added to {playerName} queue: {animation}");
 
-        if (!queueState.IsPlaying)
+        if (queueState.NeedsProcessing)
         {
-            StartCoroutine(ProcessQueue(queueState));
+            StartCoroutine(ProcessQueue(queueState, playerName));
         }
     }
 
-    private IEnumerator ProcessQueue(AnimationQueueState queueState)
+    private IEnumerator ProcessQueue(
+        SequentialAnimationQueue<Animations> queueState,
+        string playerName)
     {
-        queueState.IsPlaying = true;
-
-        while (queueState.Queue.Count > 0)
-        {
-            Animations nextAnimation = queueState.Queue.Dequeue();
-
-            if (queueState.AnimationMap.TryGetValue(nextAnimation, out var startAnimation))
-            {
-                bool animationFinished = false;
-
-                startAnimation(() =>
-                {
-                    Debug.Log($"{queueState.PlayerName} animation finished: {nextAnimation}");
-                    animationFinished = true;
-                });
-
-                yield return new WaitUntil(() => animationFinished);
-            }
-            else
-            {
-                Debug.LogWarning($"No function for {queueState.PlayerName} animation: {nextAnimation}");
-            }
-        }
-
-        queueState.IsPlaying = false;
+        yield return queueState.Process(
+            next => Debug.Log($"{playerName} animation finished: {next}"),
+            next => Debug.LogWarning($"No function for {playerName} animation: {next}"));
     }
 
 
@@ -307,8 +270,8 @@ public class GardenViewMode : MonoBehaviour, ISimulationMode
             { Animations.keyTakesBicycle, KeyTakesBicycle },
         };
 
-        kelanQueueState = new AnimationQueueState("Kelan", kelanAnimationMap);
-        keyQueueState = new AnimationQueueState("Key", keyAnimationMap);
+        kelanQueueState = new SequentialAnimationQueue<Animations>(kelanAnimationMap);
+        keyQueueState = new SequentialAnimationQueue<Animations>(keyAnimationMap);
     }
 
     void Start()

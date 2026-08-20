@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class KitchenLesson : MonoBehaviour, ISimulationMode
+public class KitchenLesson : MonoBehaviour, IConfiguredSequenceMode
 {
     public enum KitchenAnimations
     {
@@ -66,9 +66,7 @@ public class KitchenLesson : MonoBehaviour, ISimulationMode
     private Coroutine KayCoroutine;
     private Coroutine configuredSequenceCoroutine;
 
-    private readonly Queue<KitchenAnimations> animationQueue = new();
-    private bool isPlaying;
-    private bool currentAnimationFinished;
+    private SequentialAnimationQueue<KitchenAnimations> animationQueue;
     private bool bagSequenceComplete;
 
     private Dictionary<KitchenAnimations, Action<Action>> animationMap;
@@ -94,6 +92,7 @@ public class KitchenLesson : MonoBehaviour, ISimulationMode
             { KitchenAnimations.KayTakeWater, KayTakeWater },
             { KitchenAnimations.KayTakeCrackers, KayTakeCrackers },
         };
+        animationQueue = new SequentialAnimationQueue<KitchenAnimations>(animationMap);
     }
 
 
@@ -108,15 +107,12 @@ public class KitchenLesson : MonoBehaviour, ISimulationMode
             return;
         }
 
-        animationName = animationName.Trim();
-
-        if (Enum.TryParse(animationName, true, out KitchenAnimations animation) &&
-            Enum.IsDefined(typeof(KitchenAnimations), animation))
+        AnimationEnqueueResult result = animationQueue.Enqueue(animationName, out KitchenAnimations animation);
+        if (result == AnimationEnqueueResult.Added)
         {
-            animationQueue.Enqueue(animation);
             Debug.Log($"Animation added to queue: {animation}");
 
-            if (!isPlaying)
+            if (animationQueue.NeedsProcessing)
             {
                 StartCoroutine(ProcessQueue());
             }
@@ -129,31 +125,9 @@ public class KitchenLesson : MonoBehaviour, ISimulationMode
 
     private IEnumerator ProcessQueue()
     {
-        isPlaying = true;
-
-        while (animationQueue.Count > 0)
-        {
-            KitchenAnimations nextAnimation = animationQueue.Dequeue();
-
-            if (animationMap.TryGetValue(nextAnimation, out var startAnimation))
-            {
-                currentAnimationFinished = false;
-
-                startAnimation(() =>
-                {
-                    Debug.Log("Animation finished: " + nextAnimation);
-                    currentAnimationFinished = true;
-                });
-
-                yield return new WaitUntil(() => currentAnimationFinished);
-            }
-            else
-            {
-                Debug.LogWarning("No function for animation: " + nextAnimation);
-            }
-        }
-
-        isPlaying = false;
+        yield return animationQueue.Process(
+            next => Debug.Log("Animation finished: " + next),
+            next => Debug.LogWarning("No function for animation: " + next));
     }
     void Start()
     {
@@ -233,8 +207,6 @@ public class KitchenLesson : MonoBehaviour, ISimulationMode
 
         StopAllCoroutines();
         animationQueue.Clear();
-        isPlaying = false;
-        currentAnimationFinished = false;
         playAnimation = false;
         simulationStart = false;
         KayCoroutine = null;
@@ -313,8 +285,6 @@ public class KitchenLesson : MonoBehaviour, ISimulationMode
         Debug.Log("Cleanup ChildrenRoom mode");
         StopAllCoroutines();
         animationQueue.Clear();
-        isPlaying = false;
-        currentAnimationFinished = false;
         playAnimation = false;
         simulationStart = false;
         KayCoroutine = null;
@@ -497,82 +467,22 @@ public class KitchenLesson : MonoBehaviour, ISimulationMode
 
     private IEnumerator MoveToTarget(Transform objectTransform, Vector3 targetPoint, float speed, bool flipX = false)
     {
-        FlipObjects(objectTransform.gameObject, targetPoint, flipX);
-        while (Vector3.Distance(objectTransform.position, targetPoint) > stopDistance)
-        {
-            objectTransform.position = Vector3.MoveTowards(
-                objectTransform.position,
-                targetPoint,
-                speed * Time.deltaTime);
-
-            yield return null;
-        }
-
-        objectTransform.position = targetPoint;
+        return CharacterMotion.MoveToTarget(objectTransform, targetPoint, speed, stopDistance, flipX);
     }
 
     private void SetUniformScale(Transform objectTransform)
     {
-        float scaleX = objectTransform.localScale.x;
-        objectTransform.localScale = new Vector3(scaleX, scaleX, scaleX);
+        CharacterMotion.SetUniformScale(objectTransform);
     }
 
     private void SetRoomObjectActiveByName(string objectName, bool activate)
     {
-        if (string.IsNullOrWhiteSpace(objectName))
-        {
-            Debug.LogWarning("SetRoomObjectActiveByName: objectName is empty.");
-            return;
-        }
-
-        RoomTakesObjects roomTakesObjects = kayObj.GetComponent<RoomTakesObjects>();
-        if (roomTakesObjects == null)
-        {
-            Debug.LogWarning("SetRoomObjectActiveByName: RoomTakesObjects component not found on kelen.");
-            return;
-        }
-
-        for (int i = 0; i < roomTakesObjects.objectsToActivateDeactivate.Count; i++)
-        {
-            ActivateDeactivateObject entry = roomTakesObjects.objectsToActivateDeactivate[i];
-            if (entry == null)
-                continue;
-
-            if (string.Equals(entry.objectName, objectName, StringComparison.OrdinalIgnoreCase))
-            {
-                if (activate)
-                    entry.ActivateObject();
-                else
-                    entry.DeactivateObject();
-
-                return;
-            }
-        }
-
-        Debug.LogWarning($"SetRoomObjectActiveByName: object '{objectName}' was not found in objectsToActivateDeactivate.");
+        RoomObjectActivation.SetActive(kayObj, objectName, activate);
     }
 
 
     public void FlipObjects(GameObject objToFlip, Vector3 targetPoint, bool flipX = false)
     {
-        if (objToFlip == null)
-            return;
-
-        // Compare world-space X coordinates (targetPoint is in world space).
-        float currentX = objToFlip.transform.position.x;
-        bool movingRight = targetPoint.x > currentX;
-
-        // Flip by setting the sign of localScale.x.
-        Vector3 ls = objToFlip.transform.localScale;
-        if (!flipX)
-        {
-            ls.x = Mathf.Abs(ls.x) * (movingRight ? -1f : 1f);
-        }
-        else
-        {
-            ls.x = Mathf.Abs(ls.x) * (movingRight ? 1f : -1f);
-        }
-
-        objToFlip.transform.localScale = ls;
+        CharacterMotion.FaceTarget(objToFlip != null ? objToFlip.transform : null, targetPoint, flipX);
     }
 }

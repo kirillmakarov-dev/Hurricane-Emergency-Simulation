@@ -2,7 +2,7 @@ using System.Collections;
 using UnityEngine;
 using System;
 
-public class ShelterMod : MonoBehaviour, ISimulationMode
+public class ShelterMod : MonoBehaviour, IConfiguredSequenceMode
 {
     public enum ShelterAnimations
     {
@@ -19,10 +19,7 @@ public class ShelterMod : MonoBehaviour, ISimulationMode
     public float timer = 5f;
     public bool simulationStart = false;
 
-    private readonly System.Collections.Generic.Queue<ShelterAnimations> animationQueue = new();
-    private bool isPlaying;
-    private bool currentAnimationFinished;
-    private ShelterAnimations? currentQueuedAnimation;
+    private SequentialAnimationQueue<ShelterAnimations> animationQueue;
     private Coroutine configuredSequenceCoroutine;
 
     private System.Collections.Generic.Dictionary<ShelterAnimations, Action<Action>> animationMap;
@@ -32,10 +29,7 @@ public class ShelterMod : MonoBehaviour, ISimulationMode
         // cleanup shelter mode state
         configuredSequenceCoroutine = null;
         StopAllCoroutines();
-        animationQueue.Clear();
-        isPlaying = false;
-        currentAnimationFinished = false;
-        currentQueuedAnimation = null;
+        animationQueue?.Clear();
         simulationStart = false;
         if (kayakAnimator != null) kayakAnimator.gameObject.SetActive(false);
         if (strangerAnimator != null) strangerAnimator.gameObject.SetActive(false);
@@ -95,9 +89,6 @@ public class ShelterMod : MonoBehaviour, ISimulationMode
 
         StopAllCoroutines();
         animationQueue.Clear();
-        isPlaying = false;
-        currentAnimationFinished = false;
-        currentQueuedAnimation = null;
         simulationStart = false;
 
         if (kayakAnimator != null) kayakAnimator.gameObject.SetActive(true);
@@ -129,20 +120,18 @@ public class ShelterMod : MonoBehaviour, ISimulationMode
             { ShelterAnimations.PlaysOutside, OnPlaysOutside },
             { ShelterAnimations.TalksToAStranger, OnTalksToAStranger }
         };
+        animationQueue = new SequentialAnimationQueue<ShelterAnimations>(animationMap, true);
     }
 
     public void ShelterQueueAnimation(string animationName)
     {
         if (string.IsNullOrWhiteSpace(animationName)) return;
-        animationName = animationName.Trim();
-        if (Enum.TryParse(animationName, true, out ShelterAnimations animation) &&
-            Enum.IsDefined(typeof(ShelterAnimations), animation))
+        AnimationEnqueueResult result = animationQueue.Enqueue(animationName, out _);
+        if (result == AnimationEnqueueResult.Added)
         {
-            if (currentQueuedAnimation == animation || animationQueue.Contains(animation)) return;
-            animationQueue.Enqueue(animation);
-            if (!isPlaying) StartCoroutine(ProcessQueue());
+            if (animationQueue.NeedsProcessing) StartCoroutine(ProcessQueue());
         }
-        else
+        else if (result == AnimationEnqueueResult.InvalidName)
         {
             Debug.LogWarning($"No such shelter animation: {animationName}");
         }
@@ -152,24 +141,8 @@ public class ShelterMod : MonoBehaviour, ISimulationMode
     private IEnumerator ProcessQueue()
     {
         Debug.Log("Processing shelter animation queue...");
-        isPlaying = true;
-        while (animationQueue.Count > 0)
-        {
-            ShelterAnimations next = animationQueue.Dequeue();
-            currentQueuedAnimation = next;
-            if (animationMap.TryGetValue(next, out var startAnimation))
-            {
-                currentAnimationFinished = false;
-                startAnimation(() => { currentAnimationFinished = true; });
-                yield return new WaitUntil(() => currentAnimationFinished);
-            }
-            else
-            {
-                Debug.LogWarning("No function for shelter animation: " + next);
-            }
-            currentQueuedAnimation = null;
-        }
-        isPlaying = false;
+        yield return animationQueue.Process(
+            onMissingAction: next => Debug.LogWarning("No function for shelter animation: " + next));
     }
 
     public void OnColoursABook(Action onComplete)

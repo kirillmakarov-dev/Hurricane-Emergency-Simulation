@@ -80,6 +80,11 @@ public class SimulationManager : Singelton<SimulationManager>
         return modeFactory.GetMode<T>(gameObject);
     }
 
+    public ISimulationMode GetMode(ModeName modeName)
+    {
+        return modeFactory.GetMode(modeName, gameObject);
+    }
+
     public void SwitchMode(ModeName newMode)
     {
         if (newMode == CurrentMode && activeGameMode != null) return;

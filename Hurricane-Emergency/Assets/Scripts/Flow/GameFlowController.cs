@@ -188,56 +188,12 @@ public sealed class GameFlowController : MonoBehaviour
 
     private bool LaunchConfiguredSequence(IReadOnlyList<string> commands)
     {
-        switch (level.Mode)
-        {
-            case ModeName.House:
-                HouseMod house = SimulationManager.Instance.GetMode<HouseMod>();
-                if (house == null) return false;
-                house.PlayConfiguredSequence(commands);
-                return true;
-            case ModeName.ClearingGarden:
-                ClearingGardenMod clearingGarden = SimulationManager.Instance.GetMode<ClearingGardenMod>();
-                if (clearingGarden == null) return false;
-                clearingGarden.PlayConfiguredSequence(commands);
-                return true;
-            case ModeName.SuperMarket:
-                SuperMarketMode supermarket = SimulationManager.Instance.GetMode<SuperMarketMode>();
-                if (supermarket == null) return false;
-                supermarket.PlayConfiguredSequence(commands);
-                return true;
-            case ModeName.GoBagLesson:
-                GoBagLesson goBag = SimulationManager.Instance.GetMode<GoBagLesson>();
-                if (goBag == null) return false;
-                goBag.PlayConfiguredSequence(commands);
-                return true;
-            case ModeName.KitchenLesson:
-                KitchenLesson kitchen = SimulationManager.Instance.GetMode<KitchenLesson>();
-                if (kitchen == null) return false;
-                kitchen.PlayConfiguredSequence(commands);
-                return true;
-            case ModeName.ChildrenRoom:
-                ChildrenRoomMode bedroom = SimulationManager.Instance.GetMode<ChildrenRoomMode>();
-                if (bedroom == null) return false;
-                bedroom.PlayConfiguredSequence(commands);
-                return true;
-            case ModeName.Shelter:
-                ShelterMod shelter = SimulationManager.Instance.GetMode<ShelterMod>();
-                if (shelter == null) return false;
-                shelter.PlayConfiguredSequence(commands);
-                return true;
-            case ModeName.AfterTheHurricane:
-                AfterTheHurricane afterTheHurricane = SimulationManager.Instance.GetMode<AfterTheHurricane>();
-                if (afterTheHurricane == null) return false;
-                afterTheHurricane.PlayConfiguredSequence(commands);
-                return true;
-            case ModeName.GardenView:
-                GardenViewMode gardenView = SimulationManager.Instance.GetMode<GardenViewMode>();
-                if (gardenView == null) return false;
-                gardenView.PlayConfiguredSequence(commands);
-                return true;
-            default:
-                return false;
-        }
+        IConfiguredSequenceMode configuredMode =
+            SimulationManager.Instance.GetMode(level.Mode) as IConfiguredSequenceMode;
+        if (configuredMode == null) return false;
+
+        configuredMode.PlayConfiguredSequence(commands);
+        return true;
     }
 
     private bool RestoreSelectedRules()
@@ -369,16 +325,22 @@ public sealed class GameFlowController : MonoBehaviour
 
     private void ClearGeneratedLessonViews()
     {
-        for (int i = generatedLessonViews.Count - 1; i >= 0; i--)
-            if (generatedLessonViews[i] != null) Destroy(generatedLessonViews[i]);
-        generatedLessonViews.Clear();
+        ClearGeneratedViews(generatedLessonViews);
     }
 
     private void ClearGeneratedRuleViews()
     {
-        for (int i = generatedRuleViews.Count - 1; i >= 0; i--)
-            if (generatedRuleViews[i] != null) Destroy(generatedRuleViews[i]);
-        generatedRuleViews.Clear();
+        ClearGeneratedViews(generatedRuleViews);
+    }
+
+    private static void ClearGeneratedViews(List<GameObject> generatedViews)
+    {
+        for (int i = generatedViews.Count - 1; i >= 0; i--)
+        {
+            if (generatedViews[i] != null) Destroy(generatedViews[i]);
+        }
+
+        generatedViews.Clear();
     }
 
     private void ReturnToLessons()

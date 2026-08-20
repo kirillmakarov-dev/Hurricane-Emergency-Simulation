@@ -70,9 +70,7 @@ public class BathRoomLesson : MonoBehaviour, ISimulationMode
 
     private Coroutine KeyCoroutine;
 
-    private readonly Queue<BathRoomAnimations> animationQueue = new();
-    private bool isPlaying;
-    private bool currentAnimationFinished;
+    private SequentialAnimationQueue<BathRoomAnimations> animationQueue;
 
     private Dictionary<BathRoomAnimations, Action<Action>> animationMap;
 
@@ -98,6 +96,7 @@ public class BathRoomLesson : MonoBehaviour, ISimulationMode
             { BathRoomAnimations.PackWashingGel, PackWashingGel },
             { BathRoomAnimations.PackCleaningSpray, PackCleaningSpray }
         };
+        animationQueue = new SequentialAnimationQueue<BathRoomAnimations>(animationMap);
     }
 
 
@@ -112,15 +111,12 @@ public class BathRoomLesson : MonoBehaviour, ISimulationMode
             return;
         }
 
-        animationName = animationName.Trim();
-
-        if (Enum.TryParse(animationName, true, out BathRoomAnimations animation) &&
-            Enum.IsDefined(typeof(BathRoomAnimations), animation))
+        AnimationEnqueueResult result = animationQueue.Enqueue(animationName, out BathRoomAnimations animation);
+        if (result == AnimationEnqueueResult.Added)
         {
-            animationQueue.Enqueue(animation);
             Debug.Log($"Animation added to queue: {animation}");
 
-            if (!isPlaying)
+            if (animationQueue.NeedsProcessing)
             {
                 StartCoroutine(ProcessQueue());
             }
@@ -133,31 +129,9 @@ public class BathRoomLesson : MonoBehaviour, ISimulationMode
 
     private IEnumerator ProcessQueue()
     {
-        isPlaying = true;
-
-        while (animationQueue.Count > 0)
-        {
-            BathRoomAnimations nextAnimation = animationQueue.Dequeue();
-
-            if (animationMap.TryGetValue(nextAnimation, out var startAnimation))
-            {
-                currentAnimationFinished = false;
-
-                startAnimation(() =>
-                {
-                    Debug.Log("Animation finished: " + nextAnimation);
-                    currentAnimationFinished = true;
-                });
-
-                yield return new WaitUntil(() => currentAnimationFinished);
-            }
-            else
-            {
-                Debug.LogWarning("No function for animation: " + nextAnimation);
-            }
-        }
-
-        isPlaying = false;
+        yield return animationQueue.Process(
+            next => Debug.Log("Animation finished: " + next),
+            next => Debug.LogWarning("No function for animation: " + next));
     }
     void Start()
     {
@@ -471,82 +445,22 @@ public class BathRoomLesson : MonoBehaviour, ISimulationMode
 
     private IEnumerator MoveToTarget(Transform objectTransform, Vector3 targetPoint, float speed, bool flipX = false)
     {
-        FlipObjects(objectTransform.gameObject, targetPoint, flipX);
-        while (Vector3.Distance(objectTransform.position, targetPoint) > stopDistance)
-        {
-            objectTransform.position = Vector3.MoveTowards(
-                objectTransform.position,
-                targetPoint,
-                speed * Time.deltaTime);
-
-            yield return null;
-        }
-
-        objectTransform.position = targetPoint;
+        return CharacterMotion.MoveToTarget(objectTransform, targetPoint, speed, stopDistance, flipX);
     }
 
     private void SetUniformScale(Transform objectTransform)
     {
-        float scaleX = objectTransform.localScale.x;
-        objectTransform.localScale = new Vector3(scaleX, scaleX, scaleX);
+        CharacterMotion.SetUniformScale(objectTransform);
     }
 
     private void SetRoomObjectActiveByName(string objectName, bool activate)
     {
-        if (string.IsNullOrWhiteSpace(objectName))
-        {
-            Debug.LogWarning("SetRoomObjectActiveByName: objectName is empty.");
-            return;
-        }
-
-        RoomTakesObjects roomTakesObjects = key.GetComponent<RoomTakesObjects>();
-        if (roomTakesObjects == null)
-        {
-            Debug.LogWarning("SetRoomObjectActiveByName: RoomTakesObjects component not found on Kay.");
-            return;
-        }
-
-        for (int i = 0; i < roomTakesObjects.objectsToActivateDeactivate.Count; i++)
-        {
-            ActivateDeactivateObject entry = roomTakesObjects.objectsToActivateDeactivate[i];
-            if (entry == null)
-                continue;
-
-            if (string.Equals(entry.objectName, objectName, StringComparison.OrdinalIgnoreCase))
-            {
-                if (activate)
-                    entry.ActivateObject();
-                else
-                    entry.DeactivateObject();
-
-                return;
-            }
-        }
-
-        Debug.LogWarning($"SetRoomObjectActiveByName: object '{objectName}' was not found in objectsToActivateDeactivate.");
+        RoomObjectActivation.SetActive(key, objectName, activate);
     }
 
 
     public void FlipObjects(GameObject objToFlip, Vector3 targetPoint, bool flipX = false)
     {
-        if (objToFlip == null)
-            return;
-
-        // Compare world-space X coordinates (targetPoint is in world space).
-        float currentX = objToFlip.transform.position.x;
-        bool movingRight = targetPoint.x > currentX;
-
-        // Flip by setting the sign of localScale.x.
-        Vector3 ls = objToFlip.transform.localScale;
-        if (!flipX)
-        {
-            ls.x = Mathf.Abs(ls.x) * (movingRight ? -1f : 1f);
-        }
-        else
-        {
-            ls.x = Mathf.Abs(ls.x) * (movingRight ? 1f : -1f);
-        }
-
-        objToFlip.transform.localScale = ls;
+        CharacterMotion.FaceTarget(objToFlip != null ? objToFlip.transform : null, targetPoint, flipX);
     }
 }

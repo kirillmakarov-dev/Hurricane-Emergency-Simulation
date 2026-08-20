@@ -12,7 +12,7 @@ public enum HouseAnimations
     WatchTV
 }
 
-public class HouseMod : MonoBehaviour, ISimulationMode
+public class HouseMod : MonoBehaviour, IConfiguredSequenceMode
 {
     public Animator firstScineAnim;
     public Animator radioAnimator;

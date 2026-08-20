@@ -22,7 +22,7 @@ public enum Animations
     HurricaneWatchAnnouncement
 }
 
-public class ChildrenRoomMode : MonoBehaviour, ISimulationMode
+public class ChildrenRoomMode : MonoBehaviour, IConfiguredSequenceMode
 {
     [SerializeField] private GameObject kelen;
     [SerializeField] private GameObject key;
@@ -61,9 +61,7 @@ public class ChildrenRoomMode : MonoBehaviour, ISimulationMode
     private float kelenStartScale;
 
 
-    private readonly Queue<Animations> animationQueue = new();
-    private bool isPlaying;
-    private bool currentAnimationFinished;
+    private SequentialAnimationQueue<Animations> animationQueue;
     private Coroutine configuredSequenceCoroutine;
     private bool bagSequenceComplete;
     private bool waitForBagBeforeCompletingAnnouncement;
@@ -96,6 +94,7 @@ public class ChildrenRoomMode : MonoBehaviour, ISimulationMode
             { Animations.KelenTakeChicken, KelenTakeChicken },
             { Animations.HurricaneWatchAnnouncement, HurricaneWatchAnnouncement }
         };
+        animationQueue = new SequentialAnimationQueue<Animations>(animationMap);
     }
 
 
@@ -110,15 +109,12 @@ public class ChildrenRoomMode : MonoBehaviour, ISimulationMode
             return;
         }
 
-        animationName = animationName.Trim();
-
-        if (Enum.TryParse(animationName, true, out Animations animation) &&
-            Enum.IsDefined(typeof(Animations), animation))
+        AnimationEnqueueResult result = animationQueue.Enqueue(animationName, out Animations animation);
+        if (result == AnimationEnqueueResult.Added)
         {
-            animationQueue.Enqueue(animation);
             Debug.Log($"Animation added to queue: {animation}");
 
-            if (!isPlaying)
+            if (animationQueue.NeedsProcessing)
             {
                 StartCoroutine(ProcessQueue());
             }
@@ -139,8 +135,6 @@ public class ChildrenRoomMode : MonoBehaviour, ISimulationMode
 
         StopAllCoroutines();
         animationQueue.Clear();
-        isPlaying = false;
-        currentAnimationFinished = false;
         timerRun = false;
         hurricaneWatch = false;
         checkanimation = false;
@@ -168,31 +162,9 @@ public class ChildrenRoomMode : MonoBehaviour, ISimulationMode
 
     private IEnumerator ProcessQueue()
     {
-        isPlaying = true;
-
-        while (animationQueue.Count > 0)
-        {
-            Animations nextAnimation = animationQueue.Dequeue();
-
-            if (animationMap.TryGetValue(nextAnimation, out var startAnimation))
-            {
-                currentAnimationFinished = false;
-
-                startAnimation(() =>
-                {
-                    Debug.Log("Animation finished: " + nextAnimation);
-                    currentAnimationFinished = true;
-                });
-
-                yield return new WaitUntil(() => currentAnimationFinished);
-            }
-            else
-            {
-                Debug.LogWarning("No function for animation: " + nextAnimation);
-            }
-        }
-
-        isPlaying = false;
+        yield return animationQueue.Process(
+            next => Debug.Log("Animation finished: " + next),
+            next => Debug.LogWarning("No function for animation: " + next));
     }
     void Start()
     {
@@ -267,8 +239,6 @@ public class ChildrenRoomMode : MonoBehaviour, ISimulationMode
         Debug.Log("Cleanup ChildrenRoom mode");
         StopAllCoroutines();
         animationQueue.Clear();
-        isPlaying = false;
-        currentAnimationFinished = false;
         timerRun = false;
         hurricaneWatch = false;
         checkanimation = false;

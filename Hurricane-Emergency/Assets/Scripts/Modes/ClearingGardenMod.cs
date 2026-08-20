@@ -11,7 +11,7 @@ public enum ClearingGardenAnimations
     GoForWalk
 }
 
-public class ClearingGardenMod : MonoBehaviour, ISimulationMode
+public class ClearingGardenMod : MonoBehaviour, IConfiguredSequenceMode
 {
     public GameObject dadAnimator;
     public GameObject momAnimator;
@@ -30,26 +30,13 @@ public class ClearingGardenMod : MonoBehaviour, ISimulationMode
     }
 
 
-    private sealed class AnimationQueueState
-    {
-        public AnimationQueueState(string playerName, Dictionary<Anim, Action<Action>> animationMap)
-        {
-            PlayerName = playerName;
-            AnimationMap = animationMap;
-        }
-
-        public string PlayerName { get; }
-        public Dictionary<Anim, Action<Action>> AnimationMap { get; }
-        public Queue<Anim> Queue { get; } = new();
-        public bool IsPlaying { get; set; }
-    }
-
-    private AnimationQueueState momQueueState;
-    private AnimationQueueState dadQueueState;
+    private SequentialAnimationQueue<Anim> momQueueState;
+    private SequentialAnimationQueue<Anim> dadQueueState;
 
     private Dictionary<Anim, Action<Action>> momAnimationMap;
     private Dictionary<Anim, Action<Action>> dadAnimationMap;
-    private readonly Queue<ClearingGardenAnimations> configuredAnimationQueue = new();
+    private Dictionary<ClearingGardenAnimations, Action<Action>> configuredAnimationMap;
+    private SequentialAnimationQueue<ClearingGardenAnimations> configuredAnimationQueue;
     private Coroutine configuredQueueCoroutine;
 
     private void Awake()
@@ -66,8 +53,18 @@ public class ClearingGardenMod : MonoBehaviour, ISimulationMode
             { Anim.PlyWood, StartGatherPlywood },
         };
 
-        momQueueState = new AnimationQueueState("Mom", momAnimationMap);
-        dadQueueState = new AnimationQueueState("Dad", dadAnimationMap);
+        configuredAnimationMap = new Dictionary<ClearingGardenAnimations, Action<Action>>()
+        {
+            { ClearingGardenAnimations.ClearYard, StartMomCleaning },
+            { ClearingGardenAnimations.GatherPlywood, StartGatherPlywood },
+            { ClearingGardenAnimations.WaterFlowers, StartWateringFlowers },
+            { ClearingGardenAnimations.GoForWalk, StartDadWalk },
+        };
+
+        momQueueState = new SequentialAnimationQueue<Anim>(momAnimationMap);
+        dadQueueState = new SequentialAnimationQueue<Anim>(dadAnimationMap);
+        configuredAnimationQueue =
+            new SequentialAnimationQueue<ClearingGardenAnimations>(configuredAnimationMap);
     }
 
     public void Cleanup()
@@ -126,11 +123,9 @@ public class ClearingGardenMod : MonoBehaviour, ISimulationMode
         configuredAnimationQueue.Clear();
         for (int i = 0; i < animationNames.Count; i++)
         {
-            if (Enum.TryParse(animationNames[i], true, out ClearingGardenAnimations animation))
-            {
-                configuredAnimationQueue.Enqueue(animation);
-            }
-            else
+            AnimationEnqueueResult result =
+                configuredAnimationQueue.Enqueue(animationNames[i], out _);
+            if (result == AnimationEnqueueResult.InvalidName)
             {
                 Debug.LogWarning($"Unknown Cleaning Garden lesson command: {animationNames[i]}");
             }
@@ -141,31 +136,9 @@ public class ClearingGardenMod : MonoBehaviour, ISimulationMode
 
     private IEnumerator ProcessConfiguredLessonQueue()
     {
-        while (configuredAnimationQueue.Count > 0)
-        {
-            ClearingGardenAnimations animation = configuredAnimationQueue.Dequeue();
-            bool finished = false;
-            Action onComplete = () => finished = true;
-
-            switch (animation)
-            {
-                case ClearingGardenAnimations.ClearYard:
-                    StartMomCleaning(onComplete);
-                    break;
-                case ClearingGardenAnimations.GatherPlywood:
-                    StartGatherPlywood(onComplete);
-                    break;
-                case ClearingGardenAnimations.WaterFlowers:
-                    StartWateringFlowers(onComplete);
-                    break;
-                case ClearingGardenAnimations.GoForWalk:
-                    StartDadWalk(onComplete);
-                    break;
-            }
-
-            yield return new WaitUntil(() => finished);
-            WebGLBridge.SendEvent(GetConfiguredEvent(animation).ToString());
-        }
+        yield return configuredAnimationQueue.Process(
+            animation => WebGLBridge.SendEvent(GetConfiguredEvent(animation).ToString()),
+            animation => Debug.LogWarning($"No function for Cleaning Garden animation: {animation}"));
 
         configuredQueueCoroutine = null;
     }
@@ -334,23 +307,7 @@ public class ClearingGardenMod : MonoBehaviour, ISimulationMode
             waterParticles.SetActive(value);
         }
     }
-
-
-
-    // public void AddMomAnimationFromWeb(string animationName) // called from WebGL
-    // {
-    //     EnqueueAnimationFromWeb(animationName, momQueueState);
-    // }
-
-
-    // public void AddDadAnimationFromWeb(string animationName) // called from WebGL
-    // {
-    //     EnqueueAnimationFromWeb(animationName, dadQueueState);
-    // }
-
-
-
-    private void EnqueueAnimation(AnimationQueueState queueState, Anim animation)
+    private void EnqueueAnimation(SequentialAnimationQueue<Anim> queueState, Anim animation)
     {
         if (queueState == null)
         {
@@ -358,77 +315,21 @@ public class ClearingGardenMod : MonoBehaviour, ISimulationMode
             return;
         }
 
-        queueState.Queue.Enqueue(animation);
+        queueState.Enqueue(animation);
 
-        if (!queueState.IsPlaying)
+        if (queueState.NeedsProcessing)
         {
-            StartCoroutine(ProcessQueue(queueState));
+            string playerName = ReferenceEquals(queueState, momQueueState) ? "Mom" : "Dad";
+            StartCoroutine(ProcessQueue(queueState, playerName));
         }
     }
 
 
-    // private void EnqueueAnimationFromWeb(string animationName, AnimationQueueState queueState)
-    // {
-    //     Debug.Log($"added animation from web for {queueState.PlayerName}: {animationName}");
-
-    //     if (string.IsNullOrWhiteSpace(animationName))
-    //     {
-    //         Debug.LogWarning($"Empty animation name for {queueState.PlayerName}");
-    //         return;
-    //     }
-
-    //     animationName = animationName.Trim();
-
-    //     if (!Enum.TryParse(animationName, true, out Anim animation) ||
-    //         !Enum.IsDefined(typeof(Anim), animation))
-    //     {
-    //         Debug.LogWarning($"No such animation in enum Anim: {animationName}");
-    //         return;
-    //     }
-
-    //     if (!queueState.AnimationMap.ContainsKey(animation))
-    //     {
-    //         Debug.LogWarning($"Animation {animation} is not supported for {queueState.PlayerName}");
-    //         return;
-    //     }
-
-    //     queueState.Queue.Enqueue(animation);
-    //     Debug.Log($"Animation added to {queueState.PlayerName} queue: {animation}");
-
-    //     if (!queueState.IsPlaying)
-    //     {
-    //         StartCoroutine(ProcessQueue(queueState));
-    //     }
-    // }
-
-
-    private IEnumerator ProcessQueue(AnimationQueueState queueState)
+    private IEnumerator ProcessQueue(SequentialAnimationQueue<Anim> queueState, string playerName)
     {
-        queueState.IsPlaying = true;
-
-        while (queueState.Queue.Count > 0)
-        {
-            Anim nextAnimation = queueState.Queue.Dequeue();
-
-            if (queueState.AnimationMap.TryGetValue(nextAnimation, out var startAnimation))
-            {
-                bool animationFinished = false;
-
-                startAnimation(() =>
-                {
-                    Debug.Log($"{queueState.PlayerName} animation finished: {nextAnimation}");
-                    animationFinished = true;
-                });
-
-                yield return new WaitUntil(() => animationFinished);
-            }
-            else
-            {
-                Debug.LogWarning($"No function for {queueState.PlayerName} animation: {nextAnimation}");
-            }
-        }
-
-        queueState.IsPlaying = false;
+        yield return queueState.Process(
+            next => Debug.Log($"{playerName} animation finished: {next}"),
+            next => Debug.LogWarning($"No function for {playerName} animation: {next}"));
     }
 
 }
