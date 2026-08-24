@@ -16,12 +16,21 @@ public sealed class LessonButtonView : MonoBehaviour
     [SerializeField] private Text descriptionLabel;
     [SerializeField] private Button openButton;
 
+    private Image backgroundScrim;
+    private RectTransform cardContent;
+
     private void Awake()
     {
+        GameFlowUITheme.ApplyDynamic(gameObject);
+
         if (backgroundImage == null)
         {
             backgroundImage = GetComponent<Image>();
         }
+
+        backgroundScrim = transform.Find("BackgroundScrim")?.GetComponent<Image>();
+        cardContent = transform.Find("CardContent") as RectTransform;
+        ApplyCardLayout();
     }
 
     public void Bind(int lessonNumber, string title, string description, Sprite thumbnail, Action onOpen)
@@ -40,6 +49,69 @@ public sealed class LessonButtonView : MonoBehaviour
         descriptionLabel.text = description;
         openButton.onClick.RemoveAllListeners();
         openButton.onClick.AddListener(() => onOpen());
+        GameFlowUITheme.ApplyDynamic(gameObject);
+        ApplyCardLayout();
+    }
+
+    private void ApplyCardLayout()
+    {
+        if (backgroundScrim != null)
+        {
+            RectTransform scrimRect = backgroundScrim.rectTransform;
+            scrimRect.anchorMin = new Vector2(0f, 0f);
+            scrimRect.anchorMax = new Vector2(0.62f, 1f);
+            scrimRect.offsetMin = Vector2.zero;
+            scrimRect.offsetMax = Vector2.zero;
+            backgroundScrim.color = new Color(0.05f, 0.18f, 0.28f, 0.84f);
+            backgroundScrim.raycastTarget = false;
+        }
+
+        if (cardContent != null)
+        {
+            cardContent.anchorMin = new Vector2(0.05f, 0.08f);
+            cardContent.anchorMax = new Vector2(0.59f, 0.92f);
+            cardContent.offsetMin = Vector2.zero;
+            cardContent.offsetMax = Vector2.zero;
+
+            VerticalLayoutGroup layout = cardContent.GetComponent<VerticalLayoutGroup>();
+            if (layout != null)
+            {
+                layout.padding = new RectOffset(12, 12, 8, 8);
+                layout.spacing = 3f;
+                layout.childAlignment = TextAnchor.UpperLeft;
+                layout.childForceExpandWidth = true;
+                layout.childForceExpandHeight = false;
+                layout.childControlWidth = true;
+                layout.childControlHeight = true;
+            }
+        }
+
+        StyleCardText(numberLabel, 15, 18, FontStyle.Bold);
+        StyleCardText(titleLabel, 22, 28, FontStyle.Bold);
+        StyleCardText(descriptionLabel, 17, 22, FontStyle.Normal);
+
+        if (openButton != null)
+        {
+            LayoutElement buttonLayout = openButton.GetComponent<LayoutElement>();
+            if (buttonLayout == null) buttonLayout = openButton.gameObject.AddComponent<LayoutElement>();
+            buttonLayout.preferredWidth = 142f;
+            buttonLayout.preferredHeight = 42f;
+            buttonLayout.flexibleWidth = 0f;
+        }
+    }
+
+    private static void StyleCardText(Text text, int minSize, int maxSize, FontStyle style)
+    {
+        if (text == null) return;
+
+        text.color = Color.white;
+        text.fontStyle = style;
+        text.resizeTextForBestFit = true;
+        text.resizeTextMinSize = minSize;
+        text.resizeTextMaxSize = maxSize;
+        text.alignment = TextAnchor.UpperLeft;
+        text.horizontalOverflow = HorizontalWrapMode.Wrap;
+        text.verticalOverflow = VerticalWrapMode.Truncate;
     }
 
 #if UNITY_EDITOR

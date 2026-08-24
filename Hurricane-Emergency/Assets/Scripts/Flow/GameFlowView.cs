@@ -3,6 +3,11 @@ using UnityEngine.UI;
 
 public sealed class GameFlowView : MonoBehaviour
 {
+    private void Awake()
+    {
+        GameFlowUITheme.Apply(gameObject);
+    }
+
     [Header("Screens")]
     [SerializeField] private GameObject mainMenuScreen;
     [SerializeField] private GameObject briefingScreen;

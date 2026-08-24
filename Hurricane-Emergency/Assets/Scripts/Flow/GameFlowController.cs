@@ -10,12 +10,12 @@ public sealed class GameFlowController : MonoBehaviour
     public const string MainMenuSceneName = "MainMenu";
     public const string GameplaySceneName = "SampleScene";
 
-    private static readonly Color DeepTeal = Hex("184E57");
-    private static readonly Color Aqua = Hex("65D1C8");
-    private static readonly Color Cream = Hex("F4EBD9");
-    private static readonly Color Coral = Hex("F47C65");
-    private static readonly Color Success = Hex("2D9D78");
-    private static readonly Color Warning = Hex("D95D50");
+    private static readonly Color DeepTeal = Hex("19324D");
+    private static readonly Color Aqua = Hex("0F766E");
+    private static readonly Color Cream = Hex("19324D");
+    private static readonly Color Coral = Hex("C2413A");
+    private static readonly Color Success = Hex("177A5D");
+    private static readonly Color Warning = Hex("B93832");
 
     [SerializeField] private GameFlowView view;
     [SerializeField] private LevelCatalog levelCatalog;

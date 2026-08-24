@@ -10,6 +10,11 @@ public sealed class SelectedRuleRowView : MonoBehaviour
     [SerializeField] private Button downButton;
     [SerializeField] private Button removeButton;
 
+    private void Awake()
+    {
+        GameFlowUITheme.ApplyDynamic(gameObject);
+    }
+
     public void Bind(string text, bool canMoveUp, bool canMoveDown, Action onUp, Action onDown, Action onRemove)
     {
         int separator = text.IndexOf(".  ", StringComparison.Ordinal);
@@ -23,6 +28,7 @@ public sealed class SelectedRuleRowView : MonoBehaviour
         upButton.onClick.AddListener(() => onUp());
         downButton.onClick.AddListener(() => onDown());
         removeButton.onClick.AddListener(() => onRemove());
+        GameFlowUITheme.ApplyDynamic(gameObject);
     }
 
 #if UNITY_EDITOR
