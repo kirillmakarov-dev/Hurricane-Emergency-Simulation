@@ -11,5 +11,5 @@ public interface ISimulationMode
 
 public interface IConfiguredSequenceMode : ISimulationMode
 {
-    void PlayConfiguredSequence(IReadOnlyList<string> animationNames);
+    void PlayConfiguredSequence(IReadOnlyList<string> animationNames, System.Action onCompleted = null);
 }

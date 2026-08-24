@@ -84,7 +84,7 @@ WebGLBridge.SendEvent
 
 `AfterTheHurricane`, `Shelter`, `ChildrenRoom`, `GardenView`, `ClearingGarden`, `GoBagLesson`, `KitchenLesson`, `BathRoomLesson`, and the legacy `SuperMarket` command path use `SequentialAnimationQueue<T>` where their previous implementation had the same callback-based FIFO semantics. `House` keeps its specialized timed lesson queue because its steps have action-specific waits and transition suppression. The configured `SuperMarket` sequence also remains mode-specific because it includes arrival setup and distractor feedback. These exceptions are intentional behavior-preservation boundaries, not missed generic conversions.
 
-`GameFlowController` resolves any local sequence-capable mode through `IConfiguredSequenceMode`; adding another compatible lesson no longer requires a mode-specific switch case. `SimulationManager.GetMode(ModeName)` is the non-generic registry entry used for this resolution.
+`GameFlowController` resolves any local sequence-capable mode through `IConfiguredSequenceMode`; adding another compatible lesson no longer requires a mode-specific switch case. Each configured sequence accepts an optional completion callback so feedback can wait until every selected animation has finished. `SimulationManager.GetMode(ModeName)` is the non-generic registry entry used for this resolution.
 
 ## UI Authoring Constraint
 
@@ -126,7 +126,7 @@ Current authored lesson data:
 | `Assets/Data/Lessons/AfterTheHurricaneLesson.asset` | After the Hurricane copy, mode, required enum items, distractors, thumbnail, and opening events |
 | `Assets/Data/Lessons/BathroomLesson.asset` | Bathroom copy, mode, required enum items, distractors, thumbnail, and opening events |
 
-`LevelDefinition` does not serialize animation command strings or duplicate runtime rule records. Designers choose the correct ordered items and distractors through `LessonRuleItem` enum lists. `LessonRuleItemCatalog` maps each enum value to the existing mode command, stable rule id, label, and completion event. A mode mismatch or duplicate item is reported as a configuration error. The catalog order follows the course flow: House, Cleaning Garden, Supermarket, Children Room, Garden View, Shelter, After the Hurricane, Go Bag, Kitchen, and Bathroom.
+`LevelDefinition` does not serialize animation command strings or duplicate runtime rule records. Designers choose the correct ordered items and distractors through `LessonRuleItem` enum lists; entries at the same index form an exclusive correct/distractor pair, while additional distractors remain general incorrect options. Runtime data presents each pair adjacently in a two-column rule builder: the correct option is on the left and its distractor is on the right. The labels do not reveal which option is correct. Selecting one option keeps its opposite visible but disables that button. `LessonRuleItemCatalog` maps each enum value to the existing mode command, stable rule id, label, and completion event. A mode mismatch, duplicate item, or shortage of distractors is reported as a configuration error. The catalog order follows the course flow: House, Cleaning Garden, Supermarket, Children Room, Garden View, Shelter, After the Hurricane, Go Bag, Kitchen, and Bathroom.
 
 `Tools/Hurricane/Rebuild Lesson Data Assets` intentionally restores the lesson assets to project defaults. Normal edits are made directly in the assets. Rebuilding Game Flow UI only creates missing lesson assets and does not overwrite existing lesson configuration.
 
@@ -318,7 +318,7 @@ External/public action entry points:
 
 Known outbound events are split between this class and `AnimationEvent`: `RadioBroadcast`, `ReviewEmergencyPlan`, `CheckGoBag`, `JuneFirst`, and `MayArrives`.
 
-The Unity lesson path stores every selected `HouseAnimations` command in one FIFO queue. Each command starts the existing House action, waits for its visual milestone, and reports the configured event as a fallback. Existing animation events remain active; duplicate reports do not replace the last meaningful gameplay feedback. The emergency-plan and Go Bag Animator objects have serialized `EventsManager` receivers for `ReviewEmergencyPlan` and `CheckGoBag`. During a configured lesson, `AnimationEvent.ActivateMay1()` locally invokes the formerly WebGL-driven `May1onArrivesAnim()` transition so Page Animation can unlock the emergency-plan action. The automatic transitions from Check Go Bag and Watch TV to `ClearingGarden` are suppressed only for this isolated lesson attempt.
+The Unity lesson path stores every selected `HouseAnimations` command in one FIFO queue. Each command starts the existing House action, waits for its visual milestone, and reports the configured event as a fallback. Existing animation events remain active; duplicate reports do not replace the last meaningful gameplay feedback. The emergency-plan and Go Bag Animator objects have serialized `EventsManager` receivers for `ReviewEmergencyPlan` and `CheckGoBag`. During a configured lesson, `AnimationEvent.ActivateMay1()` locally invokes the formerly WebGL-driven `May1onArrivesAnim()` transition so Page Animation can unlock the emergency-plan action. The automatic transitions from Check Go Bag and Watch TV to `ClearingGarden` are suppressed only for this isolated lesson attempt. `WatchTV` and `ParentsPanic` also deactivate the other active scene object before enabling their own animation.
 
 ### `ClearingGarden`
 
@@ -495,7 +495,7 @@ Known outbound events:
 - `PackBook`
 - browser-specific `GivesReminder(kelanParentsId)` callback.
 
-Several distractor actions intentionally send `Events.Empty`, including current ball, lamp, coloring-book, scissors, and candles paths. `RuntimeStepEvaluator` treats `Empty` as an incorrect action without advancing progress.
+Several distractor actions intentionally send `Events.Empty`, including current ball, lamp, coloring-book, scissors, and candles paths. `RuntimeStepEvaluator` treats `Empty` as an incorrect action without advancing progress. `GameFlowController` also marks a mission as failed when the selected rule set contains a distractor or when an incorrect/out-of-order runtime action is received; selected commands still run so their implemented animations remain observable.
 
 ### `KitchenLesson`
 

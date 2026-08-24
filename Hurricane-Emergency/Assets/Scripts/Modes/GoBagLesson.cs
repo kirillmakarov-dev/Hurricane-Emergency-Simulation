@@ -169,7 +169,7 @@ public class GoBagLesson : MonoBehaviour, IConfiguredSequenceMode
 
     }
 
-    public void PlayConfiguredSequence(IReadOnlyList<string> animationNames)
+    public void PlayConfiguredSequence(IReadOnlyList<string> animationNames, Action onCompleted = null)
     {
         if (animationNames == null || animationNames.Count == 0)
         {
@@ -185,10 +185,10 @@ public class GoBagLesson : MonoBehaviour, IConfiguredSequenceMode
         keyBagSequenceComplete = false;
         kelenAnimator.SetTrigger("Idle");
 
-        configuredSequenceCoroutine = StartCoroutine(PlayConfiguredSequenceCoroutine(animationNames));
+        configuredSequenceCoroutine = StartCoroutine(PlayConfiguredSequenceCoroutine(animationNames, onCompleted));
     }
 
-    private IEnumerator PlayConfiguredSequenceCoroutine(IReadOnlyList<string> animationNames)
+    private IEnumerator PlayConfiguredSequenceCoroutine(IReadOnlyList<string> animationNames, Action onCompleted)
     {
         yield return DadEnterRoomCoroutine(true);
 
@@ -197,7 +197,9 @@ public class GoBagLesson : MonoBehaviour, IConfiguredSequenceMode
             AddGoBagAnimationFromWeb(animationNames[i]);
         }
 
+        yield return new WaitUntil(() => animationQueue.Count == 0 && !animationQueue.IsRunning);
         configuredSequenceCoroutine = null;
+        onCompleted?.Invoke();
     }
 
     public void OnGivesReminder() //Called from WebGL when dad gives reminder to kelen

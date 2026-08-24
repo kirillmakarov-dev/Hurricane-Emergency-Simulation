@@ -28,6 +28,8 @@ public sealed class GameFlowController : MonoBehaviour
     private LevelSessionController session;
     private GameFlowState state;
     private int mistakes;
+    private bool missionFailed;
+    private bool resultScheduled;
     private bool isMenuScene;
 
     public GameFlowState State => state;
@@ -165,6 +167,8 @@ public sealed class GameFlowController : MonoBehaviour
     {
         state = GameFlowState.Playing;
         mistakes = 0;
+        missionFailed = false;
+        resultScheduled = false;
         view.ProgressText.text = $"0 / {level.RequiredRuntimeEvents.Count} steps complete";
         view.GameplayFeedbackText.text = "The lesson is getting ready...";
         view.GameplayFeedbackText.color = Cream;
@@ -175,10 +179,13 @@ public sealed class GameFlowController : MonoBehaviour
         session.StepEvaluated += HandleRuntimeStep;
         session.Start();
         SimulationManager.Instance.SwitchMode(level.Mode);
+
+        missionFailed = !RuleValidator.Validate(selectedRules, level.ExpectedRuleIds).IsValid;
+
         List<string> commands = new();
         for (int i = 0; i < selectedRules.Count; i++) commands.Add(selectedRules[i].AnimationCommand);
 
-        if (!LaunchConfiguredSequence(commands))
+        if (!LaunchConfiguredSequence(commands, ScheduleResultAfterAnimationSettles))
         {
             ShowFatalResult(level.Title + " is not available in this scene.");
         }
@@ -186,13 +193,13 @@ public sealed class GameFlowController : MonoBehaviour
         yield break;
     }
 
-    private bool LaunchConfiguredSequence(IReadOnlyList<string> commands)
+    private bool LaunchConfiguredSequence(IReadOnlyList<string> commands, System.Action onCompleted)
     {
         IConfiguredSequenceMode configuredMode =
             SimulationManager.Instance.GetMode(level.Mode) as IConfiguredSequenceMode;
         if (configuredMode == null) return false;
 
-        configuredMode.PlayConfiguredSequence(commands);
+        configuredMode.PlayConfiguredSequence(commands, onCompleted);
         return true;
     }
 
@@ -227,17 +234,26 @@ public sealed class GameFlowController : MonoBehaviour
                 view.GameplayFeedbackText.color = Aqua;
                 break;
             case RuntimeStepResultType.LevelCompleted:
-                view.GameplayFeedbackText.text = "All lesson actions completed correctly.";
-                view.GameplayFeedbackText.color = Aqua;
-                StartCoroutine(ShowResultAfterAnimationSettles());
+                if (missionFailed)
+                {
+                    view.GameplayFeedbackText.text = "The mission was not completed because an incorrect action was selected or performed.";
+                    view.GameplayFeedbackText.color = Coral;
+                }
+                else
+                {
+                    view.GameplayFeedbackText.text = "All lesson actions completed correctly.";
+                    view.GameplayFeedbackText.color = Aqua;
+                }
                 break;
             case RuntimeStepResultType.Incorrect:
                 mistakes++;
+                missionFailed = true;
                 view.GameplayFeedbackText.text = "That action is not part of this lesson.";
                 view.GameplayFeedbackText.color = Coral;
                 break;
             case RuntimeStepResultType.OutOfOrder:
                 mistakes++;
+                missionFailed = true;
                 view.GameplayFeedbackText.text = "Correct action, but it happened out of order.";
                 view.GameplayFeedbackText.color = Coral;
                 break;
@@ -252,10 +268,20 @@ public sealed class GameFlowController : MonoBehaviour
     {
         yield return new WaitForSecondsRealtime(2.25f);
         state = GameFlowState.LevelResult;
-        view.ResultSummaryText.text = mistakes == 0
+        view.ResultTitleText.text = missionFailed ? "Mission failed" : level.Title + " complete";
+        view.ResultSummaryText.text = missionFailed
+            ? "Mission not completed. At least one selected or performed action was incorrect."
+            : mistakes == 0
             ? "Perfect run. Every required action was completed in the planned order."
             : $"The lesson finished with {mistakes} recorded mistake(s).";
         view.ShowResult();
+    }
+
+    private void ScheduleResultAfterAnimationSettles()
+    {
+        if (resultScheduled) return;
+        resultScheduled = true;
+        StartCoroutine(ShowResultAfterAnimationSettles());
     }
 
     private void ShowFatalResult(string message)
@@ -269,6 +295,16 @@ public sealed class GameFlowController : MonoBehaviour
     private void AddRule(RuleDefinition rule)
     {
         if (selectedRules.Contains(rule)) return;
+
+        for (int i = 0; i < selectedRules.Count; i++)
+        {
+            if (!selectedRules[i].IsExclusiveWith(rule)) continue;
+
+            view.RuleFeedbackText.text = "Choose either this action or its distractor, not both.";
+            view.RuleFeedbackText.color = Warning;
+            return;
+        }
+
         selectedRules.Add(rule);
         RefreshRuleLists();
     }
@@ -291,9 +327,9 @@ public sealed class GameFlowController : MonoBehaviour
         for (int i = 0; i < level.AvailableRules.Count; i++)
         {
             RuleDefinition rule = level.AvailableRules[i];
-            if (selectedRules.Contains(rule)) continue;
             RuleOptionView option = view.CreateRuleOption(view.AvailableRulesContainer);
             option.Bind(rule.DisplayName, () => AddRule(rule));
+            option.SetInteractable(!selectedRules.Contains(rule) && !HasExclusiveSelection(rule));
             generatedRuleViews.Add(option.gameObject);
         }
 
@@ -307,6 +343,16 @@ public sealed class GameFlowController : MonoBehaviour
                 () => MoveRule(index, -1), () => MoveRule(index, 1), () => RemoveRule(rule));
             generatedRuleViews.Add(row.gameObject);
         }
+    }
+
+    private bool HasExclusiveSelection(RuleDefinition candidate)
+    {
+        for (int i = 0; i < selectedRules.Count; i++)
+        {
+            if (selectedRules[i].IsExclusiveWith(candidate)) return true;
+        }
+
+        return false;
     }
 
     private void RefreshLessonList()

@@ -78,7 +78,7 @@ public class GardenViewMode : MonoBehaviour, IConfiguredSequenceMode
         keyAnimator.gameObject.SetActive(false);
     }
 
-    public void PlayConfiguredSequence(IReadOnlyList<string> animationNames)
+    public void PlayConfiguredSequence(IReadOnlyList<string> animationNames, Action onCompleted = null)
     {
         if (animationNames == null || animationNames.Count == 0)
         {
@@ -100,10 +100,10 @@ public class GardenViewMode : MonoBehaviour, IConfiguredSequenceMode
         hurricaneWarningTimer = 0f;
         checkanimation = false;
 
-        configuredSequenceCoroutine = StartCoroutine(PlayConfiguredSequenceCoroutine(animationNames));
+        configuredSequenceCoroutine = StartCoroutine(PlayConfiguredSequenceCoroutine(animationNames, onCompleted));
     }
 
-    private IEnumerator PlayConfiguredSequenceCoroutine(IReadOnlyList<string> animationNames)
+    private IEnumerator PlayConfiguredSequenceCoroutine(IReadOnlyList<string> animationNames, Action onCompleted)
     {
         yield return PlayConfiguredAnimation(Animations.HurricaneWatchAnnouncement);
 
@@ -125,6 +125,7 @@ public class GardenViewMode : MonoBehaviour, IConfiguredSequenceMode
         }
 
         configuredSequenceCoroutine = null;
+        onCompleted?.Invoke();
     }
 
     private IEnumerator PlayConfiguredAnimation(Animations animation)
@@ -151,6 +152,10 @@ public class GardenViewMode : MonoBehaviour, IConfiguredSequenceMode
             case Animations.keyTakesBicycle:
                 KeyTakesBicycle(() => finished = true);
                 break;
+            case Animations.GardenWaterFlowers:
+                OnWaterGarden();
+                yield return new WaitForSeconds(8f);
+                yield break;
             default:
                 Debug.LogWarning("Unsupported configured garden animation: " + animation);
                 yield break;

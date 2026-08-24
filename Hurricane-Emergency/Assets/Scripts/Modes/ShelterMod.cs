@@ -79,7 +79,7 @@ public class ShelterMod : MonoBehaviour, IConfiguredSequenceMode
 
     }
 
-    public void PlayConfiguredSequence(System.Collections.Generic.IReadOnlyList<string> animationNames)
+    public void PlayConfiguredSequence(System.Collections.Generic.IReadOnlyList<string> animationNames, Action onCompleted = null)
     {
         if (animationNames == null)
         {
@@ -95,18 +95,19 @@ public class ShelterMod : MonoBehaviour, IConfiguredSequenceMode
         if (strangerAnimator != null) strangerAnimator.gameObject.SetActive(false);
         if (talkAnimator != null) talkAnimator.gameObject.SetActive(false);
 
-        configuredSequenceCoroutine = StartCoroutine(PlayConfiguredSequenceCoroutine(animationNames));
+        configuredSequenceCoroutine = StartCoroutine(PlayConfiguredSequenceCoroutine(animationNames, onCompleted));
     }
 
-    private IEnumerator PlayConfiguredSequenceCoroutine(System.Collections.Generic.IReadOnlyList<string> animationNames)
+    private IEnumerator PlayConfiguredSequenceCoroutine(System.Collections.Generic.IReadOnlyList<string> animationNames, Action onCompleted)
     {
         for (int i = 0; i < animationNames.Count; i++)
         {
             ShelterQueueAnimation(animationNames[i]);
         }
 
+        yield return new WaitUntil(() => animationQueue.Count == 0 && !animationQueue.IsRunning);
         configuredSequenceCoroutine = null;
-        yield break;
+        onCompleted?.Invoke();
     }
 
 

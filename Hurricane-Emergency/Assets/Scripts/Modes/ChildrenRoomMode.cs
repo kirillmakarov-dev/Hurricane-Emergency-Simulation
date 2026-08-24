@@ -19,7 +19,8 @@ public enum Animations
     kelanTaketoys,
     keyTakesBicycle,
     keyPickFlowers,
-    HurricaneWatchAnnouncement
+    HurricaneWatchAnnouncement,
+    GardenWaterFlowers
 }
 
 public class ChildrenRoomMode : MonoBehaviour, IConfiguredSequenceMode
@@ -127,7 +128,7 @@ public class ChildrenRoomMode : MonoBehaviour, IConfiguredSequenceMode
         }
     }
 
-    public void PlayConfiguredSequence(IReadOnlyList<string> animationNames)
+    public void PlayConfiguredSequence(IReadOnlyList<string> animationNames, Action onCompleted = null)
     {
         if (animationNames == null || animationNames.Count == 0)
         {
@@ -146,10 +147,10 @@ public class ChildrenRoomMode : MonoBehaviour, IConfiguredSequenceMode
         waitForBagBeforeCompletingAnnouncement = true;
         KelanPlay();
 
-        configuredSequenceCoroutine = StartCoroutine(PlayConfiguredSequenceCoroutine(animationNames));
+        configuredSequenceCoroutine = StartCoroutine(PlayConfiguredSequenceCoroutine(animationNames, onCompleted));
     }
 
-    private IEnumerator PlayConfiguredSequenceCoroutine(IReadOnlyList<string> animationNames)
+    private IEnumerator PlayConfiguredSequenceCoroutine(IReadOnlyList<string> animationNames, Action onCompleted)
     {
         AddAnimationFromWeb(Animations.HurricaneWatchAnnouncement.ToString());
 
@@ -158,8 +159,9 @@ public class ChildrenRoomMode : MonoBehaviour, IConfiguredSequenceMode
             AddAnimationFromWeb(animationNames[i]);
         }
 
+        yield return new WaitUntil(() => animationQueue.Count == 0 && !animationQueue.IsRunning);
         configuredSequenceCoroutine = null;
-        yield break;
+        onCompleted?.Invoke();
     }
 
     private IEnumerator ProcessQueue()

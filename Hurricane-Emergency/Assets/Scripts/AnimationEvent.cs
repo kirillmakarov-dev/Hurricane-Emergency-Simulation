@@ -56,6 +56,12 @@ public class AnimationEvent : MonoBehaviour
         Debug.Log("Activating June 1");
         WebGLBridge.OnJuneArrives(ObjectsHolder.instance.GetJune1ID());
         WebGLBridge.SendEvent(Events.JuneFirst.ToString());
+
+        if (SimulationManager.Instance != null && SimulationManager.Instance.CurrentMode == ModeName.House)
+        {
+            HouseMod house = SimulationManager.Instance.GetMode<HouseMod>();
+            house?.HandleJune1AnimationCompleted();
+        }
     }
 
 

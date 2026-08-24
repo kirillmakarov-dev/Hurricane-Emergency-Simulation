@@ -19,5 +19,5 @@ MonoBehaviour:
   mode: 5
   thumbnail: {fileID: 21300000, guid: 3445583dbd79a3e4abe7eab39593f7c7, type: 3}
   requiredItems: 210000002200000023000000
-  distractors: 2400000025000000
+  distractors: 24000000250000003f000000
   openingRuntimeEvents: 0f000000

@@ -11,6 +11,7 @@ public sealed class RuleDefinition
     [SerializeField] private string animationCommand;
     [SerializeField] private Events runtimeEvent;
     [SerializeField] private bool distractor;
+    [SerializeField] private string exclusiveRuleId;
 
     public string RuleId => ruleId;
     public string DisplayName => displayName;
@@ -18,6 +19,7 @@ public sealed class RuleDefinition
     public string AnimationCommand => animationCommand;
     public Events RuntimeEvent => runtimeEvent;
     public bool IsDistractor => distractor;
+    public string ExclusiveRuleId => exclusiveRuleId;
 
     public RuleDefinition(
         string ruleId,
@@ -25,7 +27,8 @@ public sealed class RuleDefinition
         string description,
         string animationCommand,
         Events runtimeEvent,
-        bool distractor = false)
+        bool distractor = false,
+        string exclusiveRuleId = null)
     {
         this.ruleId = ruleId;
         this.displayName = displayName;
@@ -33,6 +36,13 @@ public sealed class RuleDefinition
         this.animationCommand = animationCommand;
         this.runtimeEvent = runtimeEvent;
         this.distractor = distractor;
+        this.exclusiveRuleId = exclusiveRuleId;
+    }
+
+    public bool IsExclusiveWith(RuleDefinition other)
+    {
+        return other != null &&
+            (exclusiveRuleId == other.ruleId || other.exclusiveRuleId == ruleId);
     }
 }
 
@@ -94,19 +104,53 @@ public sealed class LevelDefinition : ScriptableObject
         requiredRuntimeEvents.Clear();
         requiredRuntimeEvents.AddRange(openingRuntimeEvents);
 
+        if (distractors.Count < requiredItems.Count)
+        {
+            Debug.LogError(
+                $"Level '{levelId}' must define at least one distractor for each required rule.",
+                this);
+        }
+
         HashSet<LessonRuleItem> usedItems = new();
+        List<RuleDefinition> correctRules = new();
+        List<RuleDefinition> distractorRules = new();
+
         for (int i = 0; i < requiredItems.Count; i++)
         {
-            if (!TryAddItem(requiredItems[i], false, usedItems, out RuleDefinition rule)) continue;
-            availableRules.Add(rule);
+            string distractorId = null;
+            if (i < distractors.Count &&
+                LessonRuleItemCatalog.TryGet(distractors[i], out LessonRuleDescriptor distractorDescriptor))
+            {
+                distractorId = distractorDescriptor.RuleId;
+            }
+
+            if (!TryAddItem(requiredItems[i], false, usedItems, distractorId, out RuleDefinition rule)) continue;
+            correctRules.Add(rule);
             expectedRuleIds.Add(rule.RuleId);
             if (rule.RuntimeEvent != Events.Empty) requiredRuntimeEvents.Add(rule.RuntimeEvent);
         }
 
         for (int i = 0; i < distractors.Count; i++)
         {
-            if (!TryAddItem(distractors[i], true, usedItems, out RuleDefinition rule)) continue;
-            availableRules.Add(rule);
+            string correctRuleId = i < expectedRuleIds.Count ? expectedRuleIds[i] : null;
+            if (!TryAddItem(distractors[i], true, usedItems, correctRuleId, out RuleDefinition rule)) continue;
+            distractorRules.Add(rule);
+        }
+
+        // Keep each correct rule directly next to its paired distractor in the
+        // rule builder. Extra distractors are appended after the complete pairs.
+        for (int i = 0; i < correctRules.Count; i++)
+        {
+            availableRules.Add(correctRules[i]);
+            if (i < distractorRules.Count)
+            {
+                availableRules.Add(distractorRules[i]);
+            }
+        }
+
+        for (int i = correctRules.Count; i < distractorRules.Count; i++)
+        {
+            availableRules.Add(distractorRules[i]);
         }
     }
 
@@ -114,6 +158,7 @@ public sealed class LevelDefinition : ScriptableObject
         LessonRuleItem item,
         bool isDistractor,
         HashSet<LessonRuleItem> usedItems,
+        string exclusiveRuleId,
         out RuleDefinition rule)
     {
         rule = null;
@@ -135,7 +180,7 @@ public sealed class LevelDefinition : ScriptableObject
             return false;
         }
 
-        rule = descriptor.CreateRule(isDistractor);
+        rule = descriptor.CreateRule(isDistractor, exclusiveRuleId);
         return true;
     }
 

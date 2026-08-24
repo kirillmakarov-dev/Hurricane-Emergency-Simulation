@@ -197,7 +197,7 @@ public class KitchenLesson : MonoBehaviour, IConfiguredSequenceMode
 
     }
 
-    public void PlayConfiguredSequence(IReadOnlyList<string> animationNames)
+    public void PlayConfiguredSequence(IReadOnlyList<string> animationNames, Action onCompleted = null)
     {
         if (animationNames == null || animationNames.Count == 0)
         {
@@ -213,10 +213,10 @@ public class KitchenLesson : MonoBehaviour, IConfiguredSequenceMode
         bagSequenceComplete = false;
         kayAnimator.SetTrigger("Idle");
 
-        configuredSequenceCoroutine = StartCoroutine(PlayConfiguredSequenceCoroutine(animationNames));
+        configuredSequenceCoroutine = StartCoroutine(PlayConfiguredSequenceCoroutine(animationNames, onCompleted));
     }
 
-    private IEnumerator PlayConfiguredSequenceCoroutine(IReadOnlyList<string> animationNames)
+    private IEnumerator PlayConfiguredSequenceCoroutine(IReadOnlyList<string> animationNames, Action onCompleted)
     {
         yield return DadEnterRoomCoroutine(true);
 
@@ -225,7 +225,9 @@ public class KitchenLesson : MonoBehaviour, IConfiguredSequenceMode
             AddGoBagKitchenAnimationFromWeb(animationNames[i]);
         }
 
+        yield return new WaitUntil(() => animationQueue.Count == 0 && !animationQueue.IsRunning);
         configuredSequenceCoroutine = null;
+        onCompleted?.Invoke();
     }
 
     public void KitchenOnGivesReminder() //Called from WebGL when dad gives reminder to kelen

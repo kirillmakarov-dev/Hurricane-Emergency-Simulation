@@ -74,7 +74,10 @@ public enum LessonRuleItem
     [InspectorName("Supermarket / Chicken")] SupermarketChicken = 60,
     [InspectorName("Supermarket / Fish")] SupermarketFish = 61,
 
-    [InspectorName("House / Watch TV")] HouseWatchTV = 62
+    [InspectorName("House / Watch TV")] HouseWatchTV = 62,
+
+    [InspectorName("Garden View / Water flowers")] GardenViewWaterFlowers = 63,
+    [InspectorName("Bedroom / Chicken")] BedroomChicken = 64
 }
 
 public readonly struct LessonRuleDescriptor
@@ -102,7 +105,7 @@ public readonly struct LessonRuleDescriptor
         Mode = mode;
     }
 
-    public RuleDefinition CreateRule(bool isDistractor)
+    public RuleDefinition CreateRule(bool isDistractor, string exclusiveRuleId = null)
     {
         string ruleDescription = isDistractor
             ? "This item is not required for this emergency lesson."
@@ -114,7 +117,8 @@ public readonly struct LessonRuleDescriptor
             ruleDescription,
             AnimationCommand,
             RuntimeEvent,
-            isDistractor);
+            isDistractor,
+            exclusiveRuleId);
     }
 }
 
@@ -186,6 +190,9 @@ public static class LessonRuleItemCatalog
             LessonRuleItem.BedroomAquarium => Create(
                 "bedroom-aquarium", "Pack the aquarium", "This item is not required for the bedroom lesson.",
                 Animations.KelenTakeAquarium, Events.Empty, ModeName.ChildrenRoom),
+            LessonRuleItem.BedroomChicken => Create(
+                "bedroom-chicken", "Pack chicken", "This item is not required for the bedroom lesson.",
+                Animations.KelenTakeChicken, Events.Empty, ModeName.ChildrenRoom),
 
             LessonRuleItem.ShelterColoursABook => Create(
                 "shelter-colours-a-book", "Colour a book", "Keep Kay calm with a quiet indoor activity while waiting in shelter.",
@@ -243,6 +250,9 @@ public static class LessonRuleItemCatalog
             LessonRuleItem.GardenViewPickFlowers => Create(
                 "garden-view-pick-flowers", "Pick flowers", "Pick flowers is not part of the safety lesson.",
                 Animations.keyPickFlowers, Events.Empty, ModeName.GardenView),
+            LessonRuleItem.GardenViewWaterFlowers => Create(
+                "garden-view-water-flowers", "Water flowers", "Watering flowers is not part of preparing the yard for a hurricane.",
+                Animations.GardenWaterFlowers, Events.Empty, ModeName.GardenView),
 
             LessonRuleItem.BathroomFirstAidKit => Create(
                 "bathroom-first-aid-kit", "Pack first aid kit", "Add first aid supplies for small injuries and emergencies.",

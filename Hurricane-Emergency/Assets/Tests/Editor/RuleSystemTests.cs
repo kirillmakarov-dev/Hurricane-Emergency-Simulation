@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
@@ -273,15 +274,64 @@ public sealed class RuleSystemTests
             Assert.That(level.AvailableRules.Count,
                 Is.EqualTo(level.RequiredItems.Count + level.Distractors.Count),
                 level.LevelId);
+            Assert.That(level.Distractors.Count,
+                Is.GreaterThanOrEqualTo(level.RequiredItems.Count),
+                $"{level.LevelId}: every required rule must have one distractor");
 
+            List<RuleDefinition> correctRules = new();
+            List<RuleDefinition> distractorRules = new();
             for (int ruleIndex = 0; ruleIndex < level.AvailableRules.Count; ruleIndex++)
             {
-                bool expectedDistractor = ruleIndex >= level.RequiredItems.Count;
-                Assert.That(level.AvailableRules[ruleIndex].IsDistractor,
-                    Is.EqualTo(expectedDistractor),
-                    $"{level.LevelId}: {level.AvailableRules[ruleIndex].RuleId}");
+                RuleDefinition rule = level.AvailableRules[ruleIndex];
+                (rule.IsDistractor ? distractorRules : correctRules).Add(rule);
+            }
+
+            Assert.That(correctRules.Count, Is.EqualTo(level.RequiredItems.Count), level.LevelId);
+            for (int ruleIndex = 0; ruleIndex < correctRules.Count; ruleIndex++)
+            {
+                RuleDefinition correct = correctRules[ruleIndex];
+                RuleDefinition distractor = null;
+                for (int distractorIndex = 0; distractorIndex < distractorRules.Count; distractorIndex++)
+                {
+                    if (distractorRules[distractorIndex].RuleId == correct.ExclusiveRuleId)
+                    {
+                        distractor = distractorRules[distractorIndex];
+                        break;
+                    }
+                }
+
+                Assert.That(distractor, Is.Not.Null,
+                    $"{level.LevelId}: {correct.RuleId} must have an adjacent distractor pair");
+                Assert.That(correct.IsExclusiveWith(distractor), Is.True,
+                    $"{level.LevelId}: {correct.RuleId} must be exclusive with {distractor.RuleId}");
+                Assert.That(distractor.IsExclusiveWith(correct), Is.True,
+                    $"{level.LevelId}: {distractor.RuleId} must be exclusive with {correct.RuleId}");
+            }
+
+            for (int ruleIndex = 0; ruleIndex < correctRules.Count; ruleIndex++)
+            {
+                int availableIndex = ruleIndex * 2;
+                Assert.That(level.AvailableRules[availableIndex].IsDistractor, Is.False, level.LevelId);
+                Assert.That(level.AvailableRules[availableIndex + 1].IsDistractor, Is.True, level.LevelId);
             }
         }
+    }
+
+    [Test]
+    public void RuleValidator_RejectsDistractorSelection()
+    {
+        RuleDefinition correct = new("radio", "Radio", "", "RadioAnnouncement", Events.RadioBroadcast,
+            false, "music");
+        RuleDefinition distractor = new("music", "Music", "", "PlayRadioSong", Events.Empty,
+            true, "radio");
+
+        RuleValidationResult result = RuleValidator.Validate(
+            new[] { distractor },
+            new[] { correct.RuleId });
+
+        Assert.That(result.IsValid, Is.False);
+        Assert.That(result.UnexpectedRuleIds, Contains.Item(distractor.RuleId));
+        Assert.That(correct.IsExclusiveWith(distractor), Is.True);
     }
 
     private static LevelDefinition LoadLevel(int index)

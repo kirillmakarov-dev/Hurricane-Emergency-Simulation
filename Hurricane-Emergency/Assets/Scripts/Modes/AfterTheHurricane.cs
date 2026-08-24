@@ -138,7 +138,7 @@ public class AfterTheHurricane : MonoBehaviour, IConfiguredSequenceMode
         }
     }
 
-    public void PlayConfiguredSequence(IReadOnlyList<string> animationNames)
+    public void PlayConfiguredSequence(IReadOnlyList<string> animationNames, Action onCompleted = null)
     {
         if (animationNames == null)
         {
@@ -156,18 +156,19 @@ public class AfterTheHurricane : MonoBehaviour, IConfiguredSequenceMode
         if (motherCanvas != null) motherCanvas.SetActive(false);
         if (allClear != null) allClear.SetActive(false);
 
-        configuredSequenceCoroutine = StartCoroutine(PlayConfiguredSequenceCoroutine(animationNames));
+        configuredSequenceCoroutine = StartCoroutine(PlayConfiguredSequenceCoroutine(animationNames, onCompleted));
     }
 
-    private IEnumerator PlayConfiguredSequenceCoroutine(IReadOnlyList<string> animationNames)
+    private IEnumerator PlayConfiguredSequenceCoroutine(IReadOnlyList<string> animationNames, Action onCompleted)
     {
         for (int i = 0; i < animationNames.Count; i++)
         {
             AfterHurricaneQueueAnimation(animationNames[i]);
         }
 
+        yield return new WaitUntil(() => animationQueue.Count == 0 && !animationQueue.IsRunning);
         configuredSequenceCoroutine = null;
-        yield break;
+        onCompleted?.Invoke();
     }
 
     public void AllClearAnimation()

@@ -113,7 +113,7 @@ public class ClearingGardenMod : MonoBehaviour, IConfiguredSequenceMode
         }
     }
 
-    public void PlayConfiguredSequence(IReadOnlyList<string> animationNames)
+    public void PlayConfiguredSequence(IReadOnlyList<string> animationNames, Action onCompleted = null)
     {
         if (configuredQueueCoroutine != null)
         {
@@ -131,16 +131,17 @@ public class ClearingGardenMod : MonoBehaviour, IConfiguredSequenceMode
             }
         }
 
-        configuredQueueCoroutine = StartCoroutine(ProcessConfiguredLessonQueue());
+        configuredQueueCoroutine = StartCoroutine(ProcessConfiguredLessonQueue(onCompleted));
     }
 
-    private IEnumerator ProcessConfiguredLessonQueue()
+    private IEnumerator ProcessConfiguredLessonQueue(Action onCompleted)
     {
         yield return configuredAnimationQueue.Process(
             animation => WebGLBridge.SendEvent(GetConfiguredEvent(animation).ToString()),
             animation => Debug.LogWarning($"No function for Cleaning Garden animation: {animation}"));
 
         configuredQueueCoroutine = null;
+        onCompleted?.Invoke();
     }
 
     private static Events GetConfiguredEvent(ClearingGardenAnimations animation)

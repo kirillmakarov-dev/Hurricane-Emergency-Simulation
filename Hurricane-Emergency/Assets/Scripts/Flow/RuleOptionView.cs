@@ -14,6 +14,11 @@ public sealed class RuleOptionView : MonoBehaviour
         button.onClick.AddListener(() => onClick());
     }
 
+    public void SetInteractable(bool interactable)
+    {
+        button.interactable = interactable;
+    }
+
 #if UNITY_EDITOR
     public void Configure(Text ruleLabel, Button ruleButton)
     {

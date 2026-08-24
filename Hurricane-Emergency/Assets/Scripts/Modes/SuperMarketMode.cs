@@ -88,12 +88,12 @@ public class SuperMarketMode : MonoBehaviour, IConfiguredSequenceMode
         }
     }
 
-    public void PlayConfiguredSequence(IReadOnlyList<string> animationNames)
+    public void PlayConfiguredSequence(IReadOnlyList<string> animationNames, Action onCompleted = null)
     {
-        StartCoroutine(PlayConfiguredSequenceCoroutine(animationNames));
+        StartCoroutine(PlayConfiguredSequenceCoroutine(animationNames, onCompleted));
     }
 
-    private IEnumerator PlayConfiguredSequenceCoroutine(IReadOnlyList<string> animationNames)
+    private IEnumerator PlayConfiguredSequenceCoroutine(IReadOnlyList<string> animationNames, Action onCompleted)
     {
         if (!supermarketMainObject.activeSelf)
         {
@@ -123,6 +123,8 @@ public class SuperMarketMode : MonoBehaviour, IConfiguredSequenceMode
                 WebGLBridge.SendEvent(Events.Empty.ToString());
             }
         }
+
+        onCompleted?.Invoke();
     }
 
     private IEnumerator ProcessQueue()
