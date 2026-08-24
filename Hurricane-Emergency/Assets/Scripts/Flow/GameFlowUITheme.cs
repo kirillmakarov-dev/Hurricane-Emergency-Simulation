@@ -99,10 +99,12 @@ public static class GameFlowUITheme
         button.colors = colors;
 
         Shadow shadow = button.GetComponent<Shadow>();
-        if (shadow == null) shadow = button.gameObject.AddComponent<Shadow>();
-        shadow.effectColor = new Color(0.08f, 0.2f, 0.3f, 0.18f);
-        shadow.effectDistance = new Vector2(0f, -3f);
-        shadow.useGraphicAlpha = true;
+        if (shadow != null)
+        {
+            shadow.effectColor = new Color(0.08f, 0.2f, 0.3f, 0.18f);
+            shadow.effectDistance = new Vector2(0f, -3f);
+            shadow.useGraphicAlpha = true;
+        }
     }
 
     private static void StyleText(Text text)

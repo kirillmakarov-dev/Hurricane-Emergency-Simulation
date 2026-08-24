@@ -9,13 +9,11 @@ public sealed class RuleOptionView : MonoBehaviour
 
     private void Awake()
     {
-        ResolveReferences();
         GameFlowUITheme.ApplyDynamic(gameObject);
     }
 
     public void Bind(string text, Action onClick)
     {
-        ResolveReferences();
         if (label == null || button == null)
         {
             Debug.LogError("RuleOptionView requires a label and a button reference.", this);
@@ -42,14 +40,7 @@ public sealed class RuleOptionView : MonoBehaviour
 
     public void SetInteractable(bool interactable)
     {
-        ResolveReferences();
-        button.interactable = interactable;
-    }
-
-    private void ResolveReferences()
-    {
-        if (label == null) label = GetComponentInChildren<Text>(true);
-        if (button == null) button = GetComponent<Button>();
+        if (button != null) button.interactable = interactable;
     }
 
 #if UNITY_EDITOR

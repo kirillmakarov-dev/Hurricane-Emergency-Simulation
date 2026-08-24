@@ -390,6 +390,8 @@ MonoBehaviour:
   titleLabel: {fileID: 4031361991149787043}
   descriptionLabel: {fileID: 3530124005215200443}
   openButton: {fileID: 1611612001182993376}
+  backgroundScrim: {fileID: 465032390000836851}
+  cardContent: {fileID: 6714154415296675344}
 --- !u!1 &7190572422641633427
 GameObject:
   m_ObjectHideFlags: 0

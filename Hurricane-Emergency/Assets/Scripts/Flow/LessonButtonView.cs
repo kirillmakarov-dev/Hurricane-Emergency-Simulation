@@ -15,22 +15,27 @@ public sealed class LessonButtonView : MonoBehaviour
     [SerializeField] private Text titleLabel;
     [SerializeField] private Text descriptionLabel;
     [SerializeField] private Button openButton;
-
-    private Image backgroundScrim;
-    private RectTransform cardContent;
+    [SerializeField] private Image backgroundScrim;
+    [SerializeField] private RectTransform cardContent;
 
     private void Awake()
     {
+        ValidateReferences();
         GameFlowUITheme.ApplyDynamic(gameObject);
 
-        if (backgroundImage == null)
-        {
-            backgroundImage = GetComponent<Image>();
-        }
-
-        backgroundScrim = transform.Find("BackgroundScrim")?.GetComponent<Image>();
-        cardContent = transform.Find("CardContent") as RectTransform;
         ApplyCardLayout();
+    }
+
+    private void ValidateReferences()
+    {
+        if (backgroundImage == null || numberLabel == null || titleLabel == null ||
+            descriptionLabel == null || openButton == null || backgroundScrim == null ||
+            cardContent == null)
+        {
+            Debug.LogError(
+                "LessonButtonView requires all visual references to be assigned in LessonButton.prefab.",
+                this);
+        }
     }
 
     public void Bind(int lessonNumber, string title, string description, Sprite thumbnail, Action onOpen)
@@ -93,10 +98,12 @@ public sealed class LessonButtonView : MonoBehaviour
         if (openButton != null)
         {
             LayoutElement buttonLayout = openButton.GetComponent<LayoutElement>();
-            if (buttonLayout == null) buttonLayout = openButton.gameObject.AddComponent<LayoutElement>();
-            buttonLayout.preferredWidth = 142f;
-            buttonLayout.preferredHeight = 42f;
-            buttonLayout.flexibleWidth = 0f;
+            if (buttonLayout != null)
+            {
+                buttonLayout.preferredWidth = 142f;
+                buttonLayout.preferredHeight = 42f;
+                buttonLayout.flexibleWidth = 0f;
+            }
         }
     }
 
