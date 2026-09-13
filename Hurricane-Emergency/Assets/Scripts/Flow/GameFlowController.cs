@@ -275,6 +275,7 @@ public sealed class GameFlowController : MonoBehaviour
             ? "Perfect run. Every required action was completed in the planned order."
             : $"The lesson finished with {mistakes} recorded mistake(s).";
         view.ShowResult();
+        if (!missionFailed) view.PlaySuccessConfetti();
     }
 
     private void ScheduleResultAfterAnimationSettles()

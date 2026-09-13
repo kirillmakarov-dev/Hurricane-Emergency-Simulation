@@ -429,8 +429,27 @@ public static class MainMenuSceneGenerator
         Button playAgain = CreateButton("PLAY AGAIN", resultActions.transform, Blue, Ink, 70f);
         AddFlexible(playAgain.gameObject, 1f);
 
+        GameObject celebrationLayerObject = new("ConfettiLayer", typeof(RectTransform));
+        celebrationLayerObject.transform.SetParent(result.transform, false);
+        RectTransform celebrationLayer = celebrationLayerObject.GetComponent<RectTransform>();
+        Stretch(celebrationLayer, 0f);
+        Image[] celebrationPieces = new Image[48];
+        for (int i = 0; i < celebrationPieces.Length; i++)
+        {
+            GameObject piece = CreateImage($"ConfettiPiece_{i:00}", Color.white);
+            piece.transform.SetParent(celebrationLayer, false);
+            RectTransform pieceRect = piece.GetComponent<RectTransform>();
+            pieceRect.anchorMin = new Vector2(0.5f, 0.5f);
+            pieceRect.anchorMax = new Vector2(0.5f, 0.5f);
+            pieceRect.pivot = new Vector2(0.5f, 0.5f);
+            pieceRect.sizeDelta = new Vector2(10f, 16f);
+            piece.GetComponent<Image>().raycastTarget = false;
+            piece.SetActive(false);
+            celebrationPieces[i] = piece.GetComponent<Image>();
+        }
+
         GameFlowView view = root.GetComponent<GameFlowView>();
-        view.Configure(mainMenu, briefing, builder, gameplay, result, briefingBack, buildRules,
+        view.Configure(mainMenu, briefing, builder, gameplay, result, celebrationLayer, celebrationPieces, briefingBack, buildRules,
             builderBack, check, backToLessons, playAgain, lessonContainer.transform, lessonPrefab,
             briefingTitle, briefingBody, objectiveText, ruleBuilderTitle, liveLabel, resultTitle,
             availableList.transform, selectedList.transform,

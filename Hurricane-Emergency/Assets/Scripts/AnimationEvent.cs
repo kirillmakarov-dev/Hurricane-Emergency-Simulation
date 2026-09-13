@@ -7,6 +7,7 @@ public class AnimationEvent : MonoBehaviour
 {
     public List<GameObject> planksList;
     private int currentPlanksIndex = 0;
+    private bool reportEachPlank = true;
 
     [SerializeField] private GameObject textCanvas; // Reference to the second animation GameObject
 
@@ -31,11 +32,20 @@ public class AnimationEvent : MonoBehaviour
 
     public void ActivatePlanks() // This method will be called by the animation event to activate the planks one by one
     {
-        if (planksList != null && planksList.Count > 0)
+        if (planksList != null && currentPlanksIndex < planksList.Count)
         {
-            planksList[currentPlanksIndex].SetActive(true);
+            GameObject plank = planksList[currentPlanksIndex];
+            if (plank != null)
+            {
+                plank.SetActive(true);
+            }
+
             currentPlanksIndex++;
-            WebGLBridge.SendEvent(Events.CollectPlywood.ToString());
+            if (reportEachPlank)
+            {
+                WebGLBridge.SendEvent(Events.CollectPlywood.ToString());
+            }
+
             if (currentPlanksIndex >= planksList.Count)
             {
                
@@ -62,6 +72,28 @@ public class AnimationEvent : MonoBehaviour
             HouseMod house = SimulationManager.Instance.GetMode<HouseMod>();
             house?.HandleJune1AnimationCompleted();
         }
+    }
+
+    public void ResetPlanks()
+    {
+        currentPlanksIndex = 0;
+        if (planksList == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < planksList.Count; i++)
+        {
+            if (planksList[i] != null)
+            {
+                planksList[i].SetActive(false);
+            }
+        }
+    }
+
+    public void SetPlankEventReporting(bool enabled)
+    {
+        reportEachPlank = enabled;
     }
 
 

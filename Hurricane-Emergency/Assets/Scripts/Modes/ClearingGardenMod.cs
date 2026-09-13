@@ -36,7 +36,7 @@ public class ClearingGardenMod : MonoBehaviour, IConfiguredSequenceMode
     private Dictionary<Anim, Action<Action>> momAnimationMap;
     private Dictionary<Anim, Action<Action>> dadAnimationMap;
     private Dictionary<ClearingGardenAnimations, Action<Action>> configuredAnimationMap;
-    private SequentialAnimationQueue<ClearingGardenAnimations> configuredAnimationQueue;
+    private readonly List<ClearingGardenAnimations> configuredAnimations = new();
     private Coroutine configuredQueueCoroutine;
 
     private void Awake()
@@ -56,15 +56,13 @@ public class ClearingGardenMod : MonoBehaviour, IConfiguredSequenceMode
         configuredAnimationMap = new Dictionary<ClearingGardenAnimations, Action<Action>>()
         {
             { ClearingGardenAnimations.ClearYard, StartMomCleaning },
-            { ClearingGardenAnimations.GatherPlywood, StartGatherPlywood },
+            { ClearingGardenAnimations.GatherPlywood, StartConfiguredGatherPlywood },
             { ClearingGardenAnimations.WaterFlowers, StartWateringFlowers },
             { ClearingGardenAnimations.GoForWalk, StartDadWalk },
         };
 
         momQueueState = new SequentialAnimationQueue<Anim>(momAnimationMap);
         dadQueueState = new SequentialAnimationQueue<Anim>(dadAnimationMap);
-        configuredAnimationQueue =
-            new SequentialAnimationQueue<ClearingGardenAnimations>(configuredAnimationMap);
     }
 
     public void Cleanup()
@@ -75,7 +73,8 @@ public class ClearingGardenMod : MonoBehaviour, IConfiguredSequenceMode
             configuredQueueCoroutine = null;
         }
 
-        configuredAnimationQueue.Clear();
+        configuredAnimations.Clear();
+        dadAnimator?.GetComponent<AnimationEvent>()?.SetPlankEventReporting(true);
     }
 
     public void Initialize()
@@ -120,15 +119,18 @@ public class ClearingGardenMod : MonoBehaviour, IConfiguredSequenceMode
             StopCoroutine(configuredQueueCoroutine);
         }
 
-        configuredAnimationQueue.Clear();
+        configuredAnimations.Clear();
         for (int i = 0; i < animationNames.Count; i++)
         {
-            AnimationEnqueueResult result =
-                configuredAnimationQueue.Enqueue(animationNames[i], out _);
-            if (result == AnimationEnqueueResult.InvalidName)
+            if (string.IsNullOrWhiteSpace(animationNames[i]) ||
+                !Enum.TryParse(animationNames[i].Trim(), true, out ClearingGardenAnimations animation) ||
+                !Enum.IsDefined(typeof(ClearingGardenAnimations), animation))
             {
                 Debug.LogWarning($"Unknown Cleaning Garden lesson command: {animationNames[i]}");
+                continue;
             }
+
+            configuredAnimations.Add(animation);
         }
 
         configuredQueueCoroutine = StartCoroutine(ProcessConfiguredLessonQueue(onCompleted));
@@ -136,9 +138,43 @@ public class ClearingGardenMod : MonoBehaviour, IConfiguredSequenceMode
 
     private IEnumerator ProcessConfiguredLessonQueue(Action onCompleted)
     {
-        yield return configuredAnimationQueue.Process(
-            animation => WebGLBridge.SendEvent(GetConfiguredEvent(animation).ToString()),
-            animation => Debug.LogWarning($"No function for Cleaning Garden animation: {animation}"));
+        int clearYardIndex = configuredAnimations.IndexOf(ClearingGardenAnimations.ClearYard);
+        int plywoodIndex = configuredAnimations.IndexOf(ClearingGardenAnimations.GatherPlywood);
+        bool runPreparationAnimationsTogether = clearYardIndex >= 0 && plywoodIndex >= 0;
+        bool clearYardFinished = false;
+        bool plywoodFinished = false;
+
+        if (runPreparationAnimationsTogether)
+        {
+            // These actions belong to different characters, so start them in the same frame.
+            configuredAnimationMap[ClearingGardenAnimations.ClearYard](() => clearYardFinished = true);
+            configuredAnimationMap[ClearingGardenAnimations.GatherPlywood](() => plywoodFinished = true);
+        }
+
+        for (int i = 0; i < configuredAnimations.Count; i++)
+        {
+            ClearingGardenAnimations animation = configuredAnimations[i];
+
+            if (runPreparationAnimationsTogether && (i == clearYardIndex || i == plywoodIndex))
+            {
+                yield return new WaitUntil(() => clearYardFinished && plywoodFinished);
+            }
+            else
+            {
+                bool finished = false;
+                if (configuredAnimationMap.TryGetValue(animation, out Action<Action> startAnimation))
+                {
+                    startAnimation(() => finished = true);
+                    yield return new WaitUntil(() => finished);
+                }
+                else
+                {
+                    Debug.LogWarning($"No function for Cleaning Garden animation: {animation}");
+                }
+            }
+
+            WebGLBridge.SendEvent(GetConfiguredEvent(animation).ToString());
+        }
 
         configuredQueueCoroutine = null;
         onCompleted?.Invoke();
@@ -230,10 +266,15 @@ public class ClearingGardenMod : MonoBehaviour, IConfiguredSequenceMode
 
     private void StartGatherPlywood(Action onComplete)
     {
-        StartCoroutine(GatherPlywood(onComplete));
+        StartCoroutine(GatherPlywood(onComplete, true));
     }
 
-    IEnumerator GatherPlywood(Action onComplete)
+    private void StartConfiguredGatherPlywood(Action onComplete)
+    {
+        StartCoroutine(GatherPlywood(onComplete, false));
+    }
+
+    IEnumerator GatherPlywood(Action onComplete, bool reportEachPlank)
     {
         while (!startAnimations)
         {
@@ -243,13 +284,27 @@ public class ClearingGardenMod : MonoBehaviour, IConfiguredSequenceMode
         dadAnimator.transform.position = new Vector3(-6f, 2f, 0f);
         dadAnimator.SetActive(true);
         Animator animator = dadAnimator.GetComponent<Animator>();
+        AnimationEvent plankEvents = dadAnimator.GetComponent<AnimationEvent>();
+        if (plankEvents == null)
+        {
+            Debug.LogError("Kelan Dad Walking needs an AnimationEvent component to gather plywood.", dadAnimator);
+            onComplete?.Invoke();
+            yield break;
+        }
+
+        plankEvents.ResetPlanks();
+        plankEvents.SetPlankEventReporting(reportEachPlank);
         animator.enabled = true;
+        animator.ResetTrigger("Walk");
+        animator.ResetTrigger("WithWood");
+        animator.ResetTrigger("OnWalk");
         animator.SetTrigger("Walk");
         // WebGLBridge.SendEvent(Events.CollectPlywood.ToString());
         while (animator.enabled != false)
         {
             yield return null; // Wait until the simulation starts
         }
+        plankEvents.SetPlankEventReporting(true);
         onComplete?.Invoke();
     }
 
