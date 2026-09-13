@@ -324,13 +324,35 @@ public sealed class GameFlowController : MonoBehaviour
     private void RefreshRuleLists()
     {
         ClearGeneratedRuleViews();
-        for (int i = 0; i < level.AvailableRules.Count; i++)
+        IReadOnlyList<RuleDefinition> available = level.AvailableRules;
+        List<RuleDefinition> displayed = new();
+        for (int i = 0; i < available.Count; i++)
         {
-            RuleDefinition rule = level.AvailableRules[i];
-            RuleOptionView option = view.CreateRuleOption(view.AvailableRulesContainer);
-            option.Bind(rule.DisplayName, () => AddRule(rule));
-            option.SetInteractable(!selectedRules.Contains(rule) && !HasExclusiveSelection(rule));
-            generatedRuleViews.Add(option.gameObject);
+            RuleDefinition first = available[i];
+            if (displayed.Contains(first)) continue;
+
+            RuleDefinition alternative = null;
+            for (int j = i + 1; j < available.Count; j++)
+            {
+                if (displayed.Contains(available[j]) || !first.IsExclusiveWith(available[j])) continue;
+                alternative = available[j];
+                break;
+            }
+
+            if (alternative != null)
+            {
+                RuleChoicePairView pair = view.CreateRuleChoicePair(view.AvailableRulesContainer);
+                BindAvailableRule(first, pair.FirstOption, true);
+                BindAvailableRule(alternative, pair.SecondOption, true);
+                displayed.Add(alternative);
+                generatedRuleViews.Add(pair.gameObject);
+            }
+            else
+            {
+                BindAvailableRule(first, view.CreateRuleOption(view.AvailableRulesContainer));
+            }
+
+            displayed.Add(first);
         }
 
         view.SetEmptySelectionVisible(selectedRules.Count == 0);
@@ -343,6 +365,13 @@ public sealed class GameFlowController : MonoBehaviour
                 () => MoveRule(index, -1), () => MoveRule(index, 1), () => RemoveRule(rule));
             generatedRuleViews.Add(row.gameObject);
         }
+    }
+
+    private void BindAvailableRule(RuleDefinition rule, RuleOptionView option, bool compact = false)
+    {
+        option.Bind(rule.DisplayName, () => AddRule(rule), compact);
+        option.SetInteractable(!selectedRules.Contains(rule) && !HasExclusiveSelection(rule));
+        generatedRuleViews.Add(option.gameObject);
     }
 
     private bool HasExclusiveSelection(RuleDefinition candidate)

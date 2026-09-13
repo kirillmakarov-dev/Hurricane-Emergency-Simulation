@@ -12,7 +12,7 @@ public sealed class RuleOptionView : MonoBehaviour
         GameFlowUITheme.ApplyDynamic(gameObject);
     }
 
-    public void Bind(string text, Action onClick)
+    public void Bind(string text, Action onClick, bool compact = false)
     {
         if (label == null || button == null)
         {
@@ -24,7 +24,10 @@ public sealed class RuleOptionView : MonoBehaviour
         button.onClick.RemoveAllListeners();
         button.onClick.AddListener(() => onClick());
         GameFlowUITheme.ApplyDynamic(gameObject);
-
+        label.fontSize = compact ? 22 : 24;
+        label.resizeTextForBestFit = false;
+        label.rectTransform.offsetMin = compact ? new Vector2(14f, 6f) : new Vector2(20f, 10f);
+        label.rectTransform.offsetMax = compact ? new Vector2(-14f, -6f) : new Vector2(-20f, -10f);
     }
 
     public void SetInteractable(bool interactable)

@@ -19,11 +19,12 @@ public static class GameFlowVisualRefresh
         Edit("LessonButton", Card);
         Edit("RuleOptionButton", root =>
         {
-            Height(root, 80);
+            Height(root, 100);
             Text label = root.GetComponentInChildren<Text>();
             Type(label, 25, FontStyle.Bold);
             Insets(label.rectTransform, 20, 10);
         });
+        Edit("RuleChoicePair", Pair);
         Edit("SelectedRuleRow", root =>
         {
             Height(root, 88);
@@ -134,10 +135,49 @@ public static class GameFlowVisualRefresh
         so.ApplyModifiedPropertiesWithoutUndo();
     }
 
+    static void Pair(GameObject root)
+    {
+        Height(root, 112);
+        var row = root.GetComponent<HorizontalLayoutGroup>();
+        row.padding = new RectOffset(10, 10, 6, 6);
+        row.spacing = 10;
+        row.childAlignment = TextAnchor.MiddleCenter;
+        row.childForceExpandWidth = false;
+        row.childForceExpandHeight = false;
+        foreach (string slotName in new[] { "FirstOptionSlot", "SecondOptionSlot" })
+        {
+            Transform slot = root.transform.Find(slotName);
+            var vertical = slot.GetComponent<VerticalLayoutGroup>() ?? slot.gameObject.AddComponent<VerticalLayoutGroup>();
+            vertical.padding = new RectOffset(0, 0, 0, 0);
+            vertical.childAlignment = TextAnchor.MiddleCenter;
+            vertical.childForceExpandWidth = true;
+            vertical.childForceExpandHeight = true;
+            vertical.childControlWidth = true;
+            vertical.childControlHeight = true;
+            var size = slot.GetComponent<LayoutElement>();
+            size.minWidth = 110;
+            size.flexibleWidth = 1;
+            Height(slot.gameObject, 100);
+            Text action = slot.GetComponentInChildren<Text>();
+            Type(action, 22, FontStyle.Bold);
+            Insets(action.rectTransform, 14, 6);
+        }
+        Transform badge = root.transform.Find("ORBadge");
+        badge.GetComponent<Image>().color = GameFlowUITheme.Teal;
+        Text label = badge.GetComponentInChildren<Text>();
+        label.text = "OR";
+        label.color = Color.white;
+        Type(label, 19, FontStyle.Bold);
+    }
+
     static void Screens(GameObject root)
     {
         Transform t = root.transform;
         var view = root.GetComponent<GameFlowView>();
+        var serializedView = new SerializedObject(view);
+        serializedView.FindProperty("ruleChoicePairPrefab").objectReferenceValue =
+            AssetDatabase.LoadAssetAtPath<RuleChoicePairView>("Assets/prefabs/GameFlow/RuleChoicePair.prefab");
+        serializedView.ApplyModifiedPropertiesWithoutUndo();
         Transform bar = t.Find("MainMenuScreen/TopAppBar");
         // These are decorative labels copied from the reference, not working controls.
         foreach (Transform child in bar)
@@ -175,10 +215,11 @@ public static class GameFlowVisualRefresh
         {
             if (text.text == "MY RULES") { text.text = "BUILD YOUR PLAN"; Type(text, 20, FontStyle.Bold); text.color = GameFlowUITheme.Teal; }
             if (text.text.StartsWith("Add actions")) { text.text = "Choose actions on the left. Arrange them in the order you want to try."; Type(text, 25, FontStyle.Normal); }
-            if (text.text == "AVAILABLE ACTIONS" || text.text == "YOUR SEQUENCE") { Type(text, 24, FontStyle.Bold); Height(text.gameObject, 36); text.alignment = TextAnchor.MiddleLeft; }
+            if (text.text == "AVAILABLE ACTIONS") text.text = "CHOOSE ONE PER PAIR";
+            if (text.text == "CHOOSE ONE PER PAIR" || text.text == "YOUR SEQUENCE") { Type(text, 24, FontStyle.Bold); Height(text.gameObject, 36); text.alignment = TextAnchor.MiddleLeft; }
         }
-        var availablePanel = view.AvailableRulesContainer.parent.GetComponent<LayoutElement>(); availablePanel.flexibleWidth = .9f;
-        var selectedPanel = view.SelectedRulesContainer.parent.GetComponent<LayoutElement>(); selectedPanel.flexibleWidth = 1.4f;
+        var availablePanel = view.AvailableRulesContainer.parent.GetComponent<LayoutElement>(); availablePanel.flexibleWidth = 1.05f;
+        var selectedPanel = view.SelectedRulesContainer.parent.GetComponent<LayoutElement>(); selectedPanel.flexibleWidth = 1.3f;
         ScrollList(view.AvailableRulesContainer); ScrollList(view.SelectedRulesContainer);
         view.RuleFeedbackText.text = "Arrange your actions, then select Check plan.";
         Type(view.RuleFeedbackText, 24, FontStyle.Normal); Height(view.RuleFeedbackText.gameObject, 42);

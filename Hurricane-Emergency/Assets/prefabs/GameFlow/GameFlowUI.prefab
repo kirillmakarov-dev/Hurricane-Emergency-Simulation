@@ -7506,6 +7506,7 @@ MonoBehaviour:
   ruleFeedbackText: {fileID: 3943061653046176293}
   ruleOptionPrefab: {fileID: 7488108055655344912, guid: b73c0804456bd3c4095abcc1d8ab1839, type: 3}
   selectedRuleRowPrefab: {fileID: 6634233455575261175, guid: affb0272a9375ca469c552790cdec8ca, type: 3}
+  ruleChoicePairPrefab: {fileID: 5307327600210692078, guid: 46313aa652b9837448a878e27fa9c96e, type: 3}
   progressText: {fileID: 8776865012713871547}
   gameplayFeedbackText: {fileID: 1627274080662506571}
   resultSummaryText: {fileID: 8926477784044113811}

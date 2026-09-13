@@ -42,6 +42,7 @@ public sealed class GameFlowView : MonoBehaviour
     [SerializeField] private Text ruleFeedbackText;
     [SerializeField] private RuleOptionView ruleOptionPrefab;
     [SerializeField] private SelectedRuleRowView selectedRuleRowPrefab;
+    [SerializeField] private RuleChoicePairView ruleChoicePairPrefab;
 
     [Header("Runtime")]
     [SerializeField] private Text progressText;
@@ -93,6 +94,11 @@ public sealed class GameFlowView : MonoBehaviour
         return Instantiate(ruleOptionPrefab, parent);
     }
 
+    public RuleChoicePairView CreateRuleChoicePair(Transform parent)
+    {
+        return Instantiate(ruleChoicePairPrefab, parent);
+    }
+
     public SelectedRuleRowView CreateSelectedRuleRow(Transform parent)
     {
         return Instantiate(selectedRuleRowPrefab, parent);
@@ -130,6 +136,7 @@ public sealed class GameFlowView : MonoBehaviour
         Text ruleFeedback,
         RuleOptionView optionPrefab,
         SelectedRuleRowView selectedPrefab,
+        RuleChoicePairView pairPrefab,
         Text progress,
         Text gameplayFeedback,
         Text resultSummary)
@@ -159,6 +166,7 @@ public sealed class GameFlowView : MonoBehaviour
         ruleFeedbackText = ruleFeedback;
         ruleOptionPrefab = optionPrefab;
         selectedRuleRowPrefab = selectedPrefab;
+        ruleChoicePairPrefab = pairPrefab;
         progressText = progress;
         gameplayFeedbackText = gameplayFeedback;
         resultSummaryText = resultSummary;

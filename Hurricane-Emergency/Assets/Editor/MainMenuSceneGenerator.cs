@@ -15,6 +15,7 @@ public static class MainMenuSceneGenerator
     private const string RuleOptionPrefabPath = PrefabFolder + "/RuleOptionButton.prefab";
     private const string SelectedRulePrefabPath = PrefabFolder + "/SelectedRuleRow.prefab";
     private const string LessonButtonPrefabPath = PrefabFolder + "/LessonButton.prefab";
+    private const string RuleChoicePairPrefabPath = PrefabFolder + "/RuleChoicePair.prefab";
 
     private static readonly Color Ink = Hex("172A38");
     private static readonly Color DeepBlue = Hex("006D96");
@@ -42,9 +43,10 @@ public static class MainMenuSceneGenerator
             ?? Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         roundedSprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
         RuleOptionView optionPrefab = BuildRuleOptionPrefab();
+        RuleChoicePairView pairPrefab = BuildRuleChoicePairPrefab(optionPrefab);
         SelectedRuleRowView selectedPrefab = BuildSelectedRulePrefab();
         LessonButtonView lessonPrefab = BuildLessonButtonPrefab();
-        BuildGameFlowUiPrefab(optionPrefab, selectedPrefab, lessonPrefab);
+        BuildGameFlowUiPrefab(optionPrefab, selectedPrefab, pairPrefab, lessonPrefab);
         GameFlowVisualRefresh.Apply();
 
         WireScene(MenuScenePath, true, levelCatalog);
@@ -112,6 +114,50 @@ public static class MainMenuSceneGenerator
         return prefab.GetComponent<SelectedRuleRowView>();
     }
 
+    private static RuleChoicePairView BuildRuleChoicePairPrefab(RuleOptionView optionPrefab)
+    {
+        GameObject root = CreateImage("RuleChoicePair", Paper);
+        Round(root);
+        AddShadow(root, new Color(0.05f, 0.18f, 0.28f, 0.08f), new Vector2(0f, -2f));
+        AddLayout(root, 112f);
+        HorizontalLayoutGroup layout = AddHorizontal(root, 10f, 10f);
+        layout.childAlignment = TextAnchor.MiddleCenter;
+        layout.childForceExpandWidth = false;
+        layout.childForceExpandHeight = false;
+
+        GameObject firstSlot = new("FirstOptionSlot", typeof(RectTransform), typeof(LayoutElement));
+        firstSlot.transform.SetParent(root.transform, false);
+        AddFlexible(firstSlot, 1f);
+        AddLayout(firstSlot, 100f);
+        VerticalLayoutGroup firstLayout = AddVertical(firstSlot, 0f, 0f);
+        firstLayout.childAlignment = TextAnchor.MiddleCenter;
+        RuleOptionView first = (RuleOptionView)PrefabUtility.InstantiatePrefab(optionPrefab);
+        first.transform.SetParent(firstSlot.transform, false);
+
+        GameObject badge = CreateImage("ORBadge", Hex("087F75"));
+        badge.transform.SetParent(root.transform, false);
+        Round(badge);
+        AddLayout(badge, 44f, 52f);
+        Text separator = CreateText("OR", badge.transform, 19, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter);
+        Stretch(separator.rectTransform, 2f);
+        separator.raycastTarget = false;
+
+        GameObject secondSlot = new("SecondOptionSlot", typeof(RectTransform), typeof(LayoutElement));
+        secondSlot.transform.SetParent(root.transform, false);
+        AddFlexible(secondSlot, 1f);
+        AddLayout(secondSlot, 100f);
+        VerticalLayoutGroup secondLayout = AddVertical(secondSlot, 0f, 0f);
+        secondLayout.childAlignment = TextAnchor.MiddleCenter;
+        RuleOptionView second = (RuleOptionView)PrefabUtility.InstantiatePrefab(optionPrefab);
+        second.transform.SetParent(secondSlot.transform, false);
+
+        RuleChoicePairView view = root.AddComponent<RuleChoicePairView>();
+        view.Configure(first, second, separator);
+        GameObject prefab = PrefabUtility.SaveAsPrefabAsset(root, RuleChoicePairPrefabPath);
+        Object.DestroyImmediate(root);
+        return prefab.GetComponent<RuleChoicePairView>();
+    }
+
     private static LessonButtonView BuildLessonButtonPrefab()
     {
         GameObject root = CreateImage("LessonButton", Soft);
@@ -155,6 +201,7 @@ public static class MainMenuSceneGenerator
     private static GameFlowView BuildGameFlowUiPrefab(
         RuleOptionView optionPrefab,
         SelectedRuleRowView selectedPrefab,
+        RuleChoicePairView pairPrefab,
         LessonButtonView lessonPrefab)
     {
         GameObject root = new("GameFlowUI", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster), typeof(GameFlowView));
@@ -387,7 +434,7 @@ public static class MainMenuSceneGenerator
             builderBack, check, backToLessons, playAgain, lessonContainer.transform, lessonPrefab,
             briefingTitle, briefingBody, objectiveText, ruleBuilderTitle, liveLabel, resultTitle,
             availableList.transform, selectedList.transform,
-            emptySelection.gameObject, ruleFeedback, optionPrefab, selectedPrefab, progress, gameplayFeedback, resultSummary);
+            emptySelection.gameObject, ruleFeedback, optionPrefab, selectedPrefab, pairPrefab, progress, gameplayFeedback, resultSummary);
         mainMenu.SetActive(true);
         briefing.SetActive(false);
         builder.SetActive(false);

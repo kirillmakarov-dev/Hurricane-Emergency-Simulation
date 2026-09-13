@@ -21,11 +21,11 @@ public static class GameFlowUITheme
             {
                 case "MainMenuScreen": case "BriefingScreen": case "RuleBuilderScreen": case "ResultScreen":
                     image.color = Canvas; image.sprite = null; break;
-                case "Content": case "SelectedRules": case "SelectedRuleRow": case "TopBar": case "Feedback":
+                case "Content": case "SelectedRules": case "SelectedRuleRow": case "PairRow": case "TopBar": case "Feedback":
                 case "LessonScrollArea": case "Viewport": image.color = Color.white; break;
                 case "TopAppBar": image.color = Canvas; break;
                 case "AvailableRules": case "Objective": case "SuccessBadge": image.color = Soft; break;
-                case "OrderBadge": case "Accent": case "LiveAccent": case "Handle": image.color = Teal; break;
+                case "OrderBadge": case "ORBadge": case "Accent": case "LiveAccent": case "Handle": image.color = Teal; break;
                 case "VerticalScrollbar": image.color = Soft; break;
             }
         }
