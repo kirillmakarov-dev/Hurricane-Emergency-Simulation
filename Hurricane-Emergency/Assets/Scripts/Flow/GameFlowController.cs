@@ -135,6 +135,9 @@ public sealed class GameFlowController : MonoBehaviour
         view.BriefingBodyText.text = level.Briefing;
         view.ObjectiveText.text = "OBJECTIVE  /  " + level.Objective;
         view.RuleBuilderTitleText.text = level.Title;
+        view.RuleBuilderInstructionsText.text = level.RequiresOrderedActions
+            ? "Choose actions on the left. Arrange them in the order you want to try."
+            : "Choose all required actions on the left. Their order does not matter.";
         view.GameplayLessonText.text = level.Title.ToUpperInvariant() + "  /  LIVE CHECK";
         view.ResultTitleText.text = level.Title + " complete";
     }
@@ -142,7 +145,9 @@ public sealed class GameFlowController : MonoBehaviour
     private void ShowRuleBuilder()
     {
         state = GameFlowState.RuleBuilder;
-        view.RuleFeedbackText.text = "Arrange your actions, then select Check plan.";
+        view.RuleFeedbackText.text = level.RequiresOrderedActions
+            ? "Arrange your actions, then select Check plan."
+            : "Choose all required actions, then select Check plan.";
         view.RuleFeedbackText.color = DeepTeal;
         view.ShowRuleBuilder();
         RefreshRuleLists();
@@ -175,12 +180,18 @@ public sealed class GameFlowController : MonoBehaviour
         view.ShowGameplay();
 
         session?.Dispose();
-        session = new LevelSessionController(level.Mode, level.RequiredRuntimeEvents);
+        session = new LevelSessionController(
+            level.Mode,
+            level.RequiredRuntimeEvents,
+            level.RequiresOrderedActions);
         session.StepEvaluated += HandleRuntimeStep;
         session.Start();
         SimulationManager.Instance.SwitchMode(level.Mode);
 
-        missionFailed = !RuleValidator.Validate(selectedRules, level.ExpectedRuleIds).IsValid;
+        missionFailed = !RuleValidator.Validate(
+            selectedRules,
+            level.ExpectedRuleIds,
+            level.RequiresOrderedActions).IsValid;
 
         List<string> commands = new();
         for (int i = 0; i < selectedRules.Count; i++) commands.Add(selectedRules[i].AnimationCommand);
@@ -272,7 +283,9 @@ public sealed class GameFlowController : MonoBehaviour
         view.ResultSummaryText.text = missionFailed
             ? "Mission not completed. At least one selected or performed action was incorrect."
             : mistakes == 0
-            ? "Perfect run. Every required action was completed in the planned order."
+            ? level.RequiresOrderedActions
+                ? "Perfect run. Every required action was completed in the planned order."
+                : "Perfect run. Every required action was completed."
             : $"The lesson finished with {mistakes} recorded mistake(s).";
         view.ShowResult();
         if (!missionFailed) view.PlaySuccessConfetti();
@@ -362,7 +375,8 @@ public sealed class GameFlowController : MonoBehaviour
             int index = i;
             RuleDefinition rule = selectedRules[i];
             SelectedRuleRowView row = view.CreateSelectedRuleRow(view.SelectedRulesContainer);
-            row.Bind($"{i + 1}.  {rule.DisplayName}", i > 0, i < selectedRules.Count - 1,
+            row.Bind($"{i + 1}.  {rule.DisplayName}", level.RequiresOrderedActions,
+                i > 0, i < selectedRules.Count - 1,
                 () => MoveRule(index, -1), () => MoveRule(index, 1), () => RemoveRule(rule));
             generatedRuleViews.Add(row.gameObject);
         }

@@ -38,15 +38,17 @@ public sealed class RuntimeStepEvaluator
 {
     private readonly List<Events> expectedEvents;
     private readonly HashSet<Events> completedEvents = new();
+    private readonly bool requireOrder;
     private int currentStep;
 
     public int CompletedSteps => currentStep;
     public int TotalSteps => expectedEvents.Count;
     public bool IsComplete => currentStep >= expectedEvents.Count;
 
-    public RuntimeStepEvaluator(IEnumerable<Events> events)
+    public RuntimeStepEvaluator(IEnumerable<Events> events, bool requireOrder = true)
     {
         expectedEvents = new List<Events>(events);
+        this.requireOrder = requireOrder;
     }
 
     public RuntimeStepResult Evaluate(Events receivedEvent)
@@ -61,6 +63,26 @@ public sealed class RuntimeStepEvaluator
         if (completedEvents.Contains(receivedEvent))
         {
             return Result(RuntimeStepResultType.Duplicate, receivedEvent, expectedEvent);
+        }
+
+        if (!requireOrder)
+        {
+            if (receivedEvent == Events.Empty)
+            {
+                return Result(RuntimeStepResultType.Incorrect, receivedEvent, null);
+            }
+
+            if (!expectedEvents.Contains(receivedEvent))
+            {
+                return Result(RuntimeStepResultType.Ignored, receivedEvent, null);
+            }
+
+            completedEvents.Add(receivedEvent);
+            currentStep++;
+            RuntimeStepResultType unorderedResult = IsComplete
+                ? RuntimeStepResultType.LevelCompleted
+                : RuntimeStepResultType.Correct;
+            return Result(unorderedResult, receivedEvent, null);
         }
 
         if (receivedEvent == expectedEvent)
@@ -117,10 +139,10 @@ public sealed class LevelSessionController : IDisposable
     public int CompletedSteps => evaluator.CompletedSteps;
     public int TotalSteps => evaluator.TotalSteps;
 
-    public LevelSessionController(ModeName mode, IEnumerable<Events> expectedEvents)
+    public LevelSessionController(ModeName mode, IEnumerable<Events> expectedEvents, bool requireOrder = true)
     {
         this.mode = mode;
-        evaluator = new RuntimeStepEvaluator(expectedEvents);
+        evaluator = new RuntimeStepEvaluator(expectedEvents, requireOrder);
     }
 
     public void Start()

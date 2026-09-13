@@ -258,7 +258,7 @@ public static class LessonDataAssetGenerator
                 "garden-view-lesson",
                 "Garden View",
                 "The family is outside when the hurricane warning arrives. Choose the safe yard actions before the storm gets close.",
-                "After the warning, take the toys, ball, and bicycle in that order.",
+                "After the warning, take the toys, ball, and bicycle. Complete all three actions in any order.",
                 ModeName.GardenView,
                 LoadSprite(GardenViewThumbnailPath),
                 new[]
@@ -270,9 +270,12 @@ public static class LessonDataAssetGenerator
                 new[]
                 {
                     LessonRuleItem.GardenViewGoForWalk,
-                    LessonRuleItem.GardenViewPickFlowers
+                    LessonRuleItem.GardenViewPickFlowers,
+                    LessonRuleItem.GardenViewWaterFlowers
                 },
-                new[] { Events.HurricaneWarning });
+                new[] { Events.HurricaneWarning },
+                true,
+                true);
             EditorUtility.SetDirty(gardenView);
         }
 

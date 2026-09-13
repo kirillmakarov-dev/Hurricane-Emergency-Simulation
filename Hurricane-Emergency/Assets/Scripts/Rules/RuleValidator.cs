@@ -27,7 +27,8 @@ public static class RuleValidator
 {
     public static RuleValidationResult Validate(
         IReadOnlyList<RuleDefinition> selectedRules,
-        IReadOnlyList<string> expectedRuleIds)
+        IReadOnlyList<string> expectedRuleIds,
+        bool requireOrder = true)
     {
         List<string> selectedIds = new();
         for (int i = 0; i < selectedRules.Count; i++)
@@ -55,7 +56,7 @@ public static class RuleValidator
             }
         }
 
-        if (missing.Count == 0 && unexpected.Count == 0 && selectedIds.Count == expectedRuleIds.Count)
+        if (requireOrder && missing.Count == 0 && unexpected.Count == 0 && selectedIds.Count == expectedRuleIds.Count)
         {
             for (int i = 0; i < expectedRuleIds.Count; i++)
             {

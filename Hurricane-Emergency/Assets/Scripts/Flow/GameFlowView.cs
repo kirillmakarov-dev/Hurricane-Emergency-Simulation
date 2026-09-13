@@ -36,6 +36,7 @@ public sealed class GameFlowView : MonoBehaviour
     [SerializeField] private Text briefingBodyText;
     [SerializeField] private Text objectiveText;
     [SerializeField] private Text ruleBuilderTitleText;
+    [SerializeField] private Text ruleBuilderInstructionsText;
     [SerializeField] private Text gameplayLessonText;
     [SerializeField] private Text resultTitleText;
 
@@ -76,6 +77,7 @@ public sealed class GameFlowView : MonoBehaviour
     public Text BriefingBodyText => briefingBodyText;
     public Text ObjectiveText => objectiveText;
     public Text RuleBuilderTitleText => ruleBuilderTitleText;
+    public Text RuleBuilderInstructionsText => ruleBuilderInstructionsText;
     public Text GameplayLessonText => gameplayLessonText;
     public Text ResultTitleText => resultTitleText;
     public Transform AvailableRulesContainer => availableRulesContainer;
@@ -276,6 +278,7 @@ public sealed class GameFlowView : MonoBehaviour
         Text briefingBody,
         Text objective,
         Text ruleBuilderTitle,
+        Text ruleBuilderInstructions,
         Text gameplayLesson,
         Text resultTitle,
         Transform availableContainer,
@@ -308,6 +311,7 @@ public sealed class GameFlowView : MonoBehaviour
         briefingBodyText = briefingBody;
         objectiveText = objective;
         ruleBuilderTitleText = ruleBuilderTitle;
+        ruleBuilderInstructionsText = ruleBuilderInstructions;
         gameplayLessonText = gameplayLesson;
         resultTitleText = resultTitle;
         availableRulesContainer = availableContainer;

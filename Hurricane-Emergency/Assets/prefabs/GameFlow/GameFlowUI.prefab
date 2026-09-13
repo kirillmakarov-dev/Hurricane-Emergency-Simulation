@@ -3320,7 +3320,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1.05
-  m_Text: YOUR SEQUENCE
+  m_Text: YOUR ACTIONS
 --- !u!114 &7297308704357022903
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7397,6 +7397,7 @@ MonoBehaviour:
   briefingBodyText: {fileID: 5996439225518621814}
   objectiveText: {fileID: 3457277767880224013}
   ruleBuilderTitleText: {fileID: 1656625068435927364}
+  ruleBuilderInstructionsText: {fileID: 9022951230958526185}
   gameplayLessonText: {fileID: 5223146514098519795}
   resultTitleText: {fileID: 4352075786732091479}
   availableRulesContainer: {fileID: 5209775294725716987}

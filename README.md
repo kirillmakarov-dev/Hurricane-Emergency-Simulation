@@ -12,9 +12,9 @@ The project turns safety guidance into active practice: learners must decide wha
 ## Project highlights
 
 - Ten hurricane-preparedness lessons covering the home, supplies, shelter, outdoor areas, and post-storm cleanup.
-- A rule-building interface with explicit either/or choices, ordered actions, and distractors.
+- A rule-building interface with explicit either/or choices, lesson-specific ordering rules, and distractors.
 - Animated simulations driven by the player's selected plan.
-- Runtime assessment that validates both the selected rules and the order of events produced by the simulation.
+- Runtime assessment that validates selected rules and enforces event order only when the lesson requires it.
 - Independent simulation modes behind a shared interface, allowing lessons to reuse one application flow.
 - ScriptableObject-based lesson content that separates educational data from presentation and animation logic.
 - Responsive prefab-authored UI with high-contrast styling, live progress feedback, completion states, and a success celebration.
@@ -26,7 +26,7 @@ The project turns safety guidance into active practice: learners must decide wha
 1. Select a hurricane-preparedness lesson.
 2. Read the briefing and objective.
 3. Choose one action from each correct/distractor pair.
-4. Arrange the selected actions in the intended order.
+4. Arrange the selected actions when the lesson requires a specific sequence.
 5. Launch the simulation and watch the characters execute the plan.
 6. Receive live feedback and a final success or failure result.
 
@@ -92,8 +92,8 @@ flowchart TD
 
 The project validates the experience at two points:
 
-- `RuleValidator` compares the player's selected rule IDs with the expected ordered plan before the simulation begins.
-- `RuntimeStepEvaluator` checks the events actually emitted by the simulation and distinguishes correct, incorrect, out-of-order, duplicate, and completed states.
+- `RuleValidator` compares the player's selected rule IDs with the lesson plan and applies the lesson's ordering policy before the simulation begins.
+- `RuntimeStepEvaluator` checks the events emitted by the simulation, supports ordered and completion-based lessons, and distinguishes correct, incorrect, out-of-order, duplicate, and completed states.
 
 `LevelSessionController` subscribes to `SimulationEventChannel` only for the active mode. This prevents events from unrelated scene systems from affecting the current lesson.
 

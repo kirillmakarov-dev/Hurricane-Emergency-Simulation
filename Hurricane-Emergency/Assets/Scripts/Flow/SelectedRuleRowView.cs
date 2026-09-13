@@ -15,13 +15,22 @@ public sealed class SelectedRuleRowView : MonoBehaviour
         GameFlowUITheme.ApplyDynamic(gameObject);
     }
 
-    public void Bind(string text, bool canMoveUp, bool canMoveDown, Action onUp, Action onDown, Action onRemove)
+    public void Bind(
+        string text,
+        bool allowReordering,
+        bool canMoveUp,
+        bool canMoveDown,
+        Action onUp,
+        Action onDown,
+        Action onRemove)
     {
         int separator = text.IndexOf(".  ", StringComparison.Ordinal);
         orderLabel.text = separator >= 0 ? text.Substring(0, separator) : string.Empty;
         actionLabel.text = separator >= 0 ? text.Substring(separator + 3) : text;
-        upButton.interactable = canMoveUp;
-        downButton.interactable = canMoveDown;
+        upButton.gameObject.SetActive(allowReordering);
+        downButton.gameObject.SetActive(allowReordering);
+        upButton.interactable = allowReordering && canMoveUp;
+        downButton.interactable = allowReordering && canMoveDown;
         upButton.onClick.RemoveAllListeners();
         downButton.onClick.RemoveAllListeners();
         removeButton.onClick.RemoveAllListeners();

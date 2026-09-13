@@ -75,6 +75,10 @@ public sealed class LevelDefinition : ScriptableObject
     [Header("Runtime")]
     [Tooltip("Events that happen before the selected item sequence, such as a reminder or warning.")]
     [SerializeField] private List<Events> openingRuntimeEvents = new();
+    [Tooltip("Allow required actions to be selected and completed in any order.")]
+    [SerializeField] private bool allowAnyActionOrder;
+    [Tooltip("Play opening events without counting them as learner progress steps.")]
+    [SerializeField] private bool excludeOpeningEventsFromProgress;
 
     [NonSerialized] private readonly List<RuleDefinition> availableRules = new();
     [NonSerialized] private readonly List<string> expectedRuleIds = new();
@@ -95,6 +99,7 @@ public sealed class LevelDefinition : ScriptableObject
     public IReadOnlyList<RuleDefinition> AvailableRules { get { EnsureRuntimeData(); return availableRules; } }
     public IReadOnlyList<string> ExpectedRuleIds { get { EnsureRuntimeData(); return expectedRuleIds; } }
     public IReadOnlyList<Events> RequiredRuntimeEvents { get { EnsureRuntimeData(); return requiredRuntimeEvents; } }
+    public bool RequiresOrderedActions => !allowAnyActionOrder;
 
     public void RebuildRuntimeData()
     {
@@ -102,7 +107,10 @@ public sealed class LevelDefinition : ScriptableObject
         availableRules.Clear();
         expectedRuleIds.Clear();
         requiredRuntimeEvents.Clear();
-        requiredRuntimeEvents.AddRange(openingRuntimeEvents);
+        if (!excludeOpeningEventsFromProgress)
+        {
+            requiredRuntimeEvents.AddRange(openingRuntimeEvents);
+        }
 
         if (distractors.Count < requiredItems.Count)
         {
@@ -210,7 +218,9 @@ public sealed class LevelDefinition : ScriptableObject
         Sprite levelThumbnail,
         IEnumerable<LessonRuleItem> correctItems,
         IEnumerable<LessonRuleItem> incorrectItems,
-        IEnumerable<Events> openingEvents)
+        IEnumerable<Events> openingEvents,
+        bool actionsMayCompleteInAnyOrder = false,
+        bool openingEventsAreInformational = false)
     {
         levelId = id;
         title = displayTitle;
@@ -221,6 +231,8 @@ public sealed class LevelDefinition : ScriptableObject
         requiredItems = new List<LessonRuleItem>(correctItems);
         distractors = new List<LessonRuleItem>(incorrectItems);
         openingRuntimeEvents = new List<Events>(openingEvents);
+        allowAnyActionOrder = actionsMayCompleteInAnyOrder;
+        excludeOpeningEventsFromProgress = openingEventsAreInformational;
         runtimeDataBuilt = false;
         RebuildRuntimeData();
     }

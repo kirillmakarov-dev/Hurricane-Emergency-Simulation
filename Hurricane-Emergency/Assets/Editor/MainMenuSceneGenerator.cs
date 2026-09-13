@@ -345,7 +345,7 @@ public static class MainMenuSceneGenerator
         builderLayout.childAlignment = TextAnchor.UpperLeft;
         FixedText("MY RULES", builderContent.transform, 13, FontStyle.Bold, Purple, TextAnchor.MiddleCenter, 22f);
         Text ruleBuilderTitle = FixedText("Build the action sequence", builderContent.transform, 38, FontStyle.Bold, DeepBlue, TextAnchor.MiddleCenter, 50f);
-        FixedText("Add actions from the left. Use UP and DOWN to match the objective.", builderContent.transform, 18, FontStyle.Normal, Muted, TextAnchor.MiddleCenter, 32f);
+        Text ruleBuilderInstructions = FixedText("Choose actions on the left. Arrange them in the order you want to try.", builderContent.transform, 18, FontStyle.Normal, Muted, TextAnchor.MiddleCenter, 32f);
         GameObject columns = CreateHorizontalGroup("Columns", builderContent.transform, 18f);
         AddFlexible(columns, 1f);
 
@@ -364,7 +364,7 @@ public static class MainMenuSceneGenerator
         selectedPanel.transform.SetParent(columns.transform, false);
         AddFlexible(selectedPanel, 1.42f);
         AddVertical(selectedPanel, 9f, 18f).childAlignment = TextAnchor.UpperLeft;
-        FixedText("YOUR SEQUENCE", selectedPanel.transform, 14, FontStyle.Bold, Blue, TextAnchor.MiddleCenter, 28f);
+        FixedText("YOUR ACTIONS", selectedPanel.transform, 14, FontStyle.Bold, Blue, TextAnchor.MiddleCenter, 28f);
         GameObject selectedList = CreateVerticalGroup("SelectedList", selectedPanel.transform, 8f);
         AddFlexible(selectedList, 1f);
         Text emptySelection = CreateText("No actions selected yet", selectedList.transform, 18, FontStyle.Italic, Muted, TextAnchor.MiddleCenter);
@@ -451,7 +451,7 @@ public static class MainMenuSceneGenerator
         GameFlowView view = root.GetComponent<GameFlowView>();
         view.Configure(mainMenu, briefing, builder, gameplay, result, celebrationLayer, celebrationPieces, briefingBack, buildRules,
             builderBack, check, backToLessons, playAgain, lessonContainer.transform, lessonPrefab,
-            briefingTitle, briefingBody, objectiveText, ruleBuilderTitle, liveLabel, resultTitle,
+            briefingTitle, briefingBody, objectiveText, ruleBuilderTitle, ruleBuilderInstructions, liveLabel, resultTitle,
             availableList.transform, selectedList.transform,
             emptySelection.gameObject, ruleFeedback, optionPrefab, selectedPrefab, pairPrefab, progress, gameplayFeedback, resultSummary);
         mainMenu.SetActive(true);

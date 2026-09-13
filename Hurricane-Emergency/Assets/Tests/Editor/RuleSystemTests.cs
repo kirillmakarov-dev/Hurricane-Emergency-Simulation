@@ -59,6 +59,21 @@ public sealed class RuleSystemTests
     }
 
     [Test]
+    public void RuleValidator_AcceptsCorrectRulesInAnyOrderWhenConfigured()
+    {
+        RuleDefinition water = Rule("water", Events.PackWater);
+        RuleDefinition flashlight = Rule("flashlight", Events.PackFlashlight);
+
+        RuleValidationResult result = RuleValidator.Validate(
+            new[] { flashlight, water },
+            new[] { "water", "flashlight" },
+            false);
+
+        Assert.That(result.IsValid, Is.True);
+        Assert.That(result.MisorderedRuleIds, Is.Empty);
+    }
+
+    [Test]
     public void RuntimeEvaluator_CompletesExpectedSequence()
     {
         RuntimeStepEvaluator evaluator = new(new[]
@@ -95,6 +110,29 @@ public sealed class RuleSystemTests
     }
 
     [Test]
+    public void RuntimeEvaluator_CompletesUnorderedLessonAfterEveryRequiredEvent()
+    {
+        RuntimeStepEvaluator evaluator = new(new[]
+        {
+            Events.GetToys,
+            Events.GetBall,
+            Events.GetBicycle
+        }, false);
+
+        RuntimeStepResult warning = evaluator.Evaluate(Events.HurricaneWarning);
+        RuntimeStepResult first = evaluator.Evaluate(Events.GetBicycle);
+        RuntimeStepResult second = evaluator.Evaluate(Events.GetToys);
+        RuntimeStepResult third = evaluator.Evaluate(Events.GetBall);
+
+        Assert.That(warning.Type, Is.EqualTo(RuntimeStepResultType.Ignored));
+        Assert.That(first.Type, Is.EqualTo(RuntimeStepResultType.Correct));
+        Assert.That(second.Type, Is.EqualTo(RuntimeStepResultType.Correct));
+        Assert.That(third.Type, Is.EqualTo(RuntimeStepResultType.LevelCompleted));
+        Assert.That(evaluator.CompletedSteps, Is.EqualTo(3));
+        Assert.That(evaluator.TotalSteps, Is.EqualTo(3));
+    }
+
+    [Test]
     public void LessonLaunchContext_PreservesSelectedRuleOrder()
     {
         RuleDefinition water = Rule("water", Events.PackWater);
@@ -108,29 +146,28 @@ public sealed class RuleSystemTests
     }
 
     [Test]
-    public void ScriptableObjectCatalog_ContainsAllSixLessons()
+    public void ScriptableObjectCatalog_ContainsAllTenLessons()
     {
         LevelCatalog catalog = AssetDatabase.LoadAssetAtPath<LevelCatalog>(CatalogPath);
 
         Assert.That(catalog, Is.Not.Null);
-        Assert.That(catalog.Levels.Count, Is.EqualTo(6));
-        Assert.That(catalog.Levels[0].LevelId, Is.EqualTo("go-bag-prototype"));
-        Assert.That(catalog.Levels[1].LevelId, Is.EqualTo("kitchen-lesson"));
-        Assert.That(catalog.Levels[2].LevelId, Is.EqualTo("bedroom-lesson"));
-        Assert.That(catalog.Levels[3].LevelId, Is.EqualTo("shelter-lesson"));
-        Assert.That(catalog.Levels[4].LevelId, Is.EqualTo("after-the-hurricane-lesson"));
-        Assert.That(catalog.Levels[5].LevelId, Is.EqualTo("garden-view-lesson"));
-        Assert.That(catalog.Levels[1].Mode, Is.EqualTo(ModeName.KitchenLesson));
-        Assert.That(catalog.Levels[2].Mode, Is.EqualTo(ModeName.ChildrenRoom));
-        Assert.That(catalog.Levels[3].Mode, Is.EqualTo(ModeName.Shelter));
-        Assert.That(catalog.Levels[4].Mode, Is.EqualTo(ModeName.AfterTheHurricane));
-        Assert.That(catalog.Levels[5].Mode, Is.EqualTo(ModeName.GardenView));
+        Assert.That(catalog.Levels.Count, Is.EqualTo(10));
+        Assert.That(catalog.Levels[0].LevelId, Is.EqualTo("house-lesson"));
+        Assert.That(catalog.Levels[1].LevelId, Is.EqualTo("cleaning-garden-lesson"));
+        Assert.That(catalog.Levels[2].LevelId, Is.EqualTo("supermarket-lesson"));
+        Assert.That(catalog.Levels[3].LevelId, Is.EqualTo("bedroom-lesson"));
+        Assert.That(catalog.Levels[4].LevelId, Is.EqualTo("garden-view-lesson"));
+        Assert.That(catalog.Levels[5].LevelId, Is.EqualTo("shelter-lesson"));
+        Assert.That(catalog.Levels[6].LevelId, Is.EqualTo("after-the-hurricane-lesson"));
+        Assert.That(catalog.Levels[7].LevelId, Is.EqualTo("go-bag-prototype"));
+        Assert.That(catalog.Levels[8].LevelId, Is.EqualTo("kitchen-lesson"));
+        Assert.That(catalog.Levels[9].LevelId, Is.EqualTo("bathroom-lesson"));
     }
 
     [Test]
     public void KitchenLesson_UsesOnlyExistingRuntimeEvents()
     {
-        LevelDefinition level = LoadLevel(1);
+        LevelDefinition level = LoadLevel("kitchen-lesson");
         level.RebuildRuntimeData();
 
         Assert.That(level.RequiredItems, Is.EqualTo(new[]
@@ -157,7 +194,7 @@ public sealed class RuleSystemTests
     [Test]
     public void BedroomLesson_UsesChildrenRoomEventSequence()
     {
-        LevelDefinition level = LoadLevel(2);
+        LevelDefinition level = LoadLevel("bedroom-lesson");
         level.RebuildRuntimeData();
 
         Assert.That(level.RequiredItems, Is.EqualTo(new[]
@@ -187,7 +224,7 @@ public sealed class RuleSystemTests
     [Test]
     public void ShelterLesson_UsesShelterEventSequence()
     {
-        LevelDefinition level = LoadLevel(3);
+        LevelDefinition level = LoadLevel("shelter-lesson");
         level.RebuildRuntimeData();
 
         Assert.That(level.RequiredItems, Is.EqualTo(new[]
@@ -210,7 +247,7 @@ public sealed class RuleSystemTests
     [Test]
     public void AfterTheHurricaneLesson_UsesCleanupEventSequence()
     {
-        LevelDefinition level = LoadLevel(4);
+        LevelDefinition level = LoadLevel("after-the-hurricane-lesson");
         level.RebuildRuntimeData();
 
         Assert.That(level.RequiredItems, Is.EqualTo(new[]
@@ -236,7 +273,7 @@ public sealed class RuleSystemTests
     [Test]
     public void GardenViewLesson_UsesGardenEventSequence()
     {
-        LevelDefinition level = LoadLevel(5);
+        LevelDefinition level = LoadLevel("garden-view-lesson");
         level.RebuildRuntimeData();
 
         Assert.That(level.RequiredItems, Is.EqualTo(new[]
@@ -253,11 +290,11 @@ public sealed class RuleSystemTests
         }));
         Assert.That(level.RequiredRuntimeEvents, Is.EqualTo(new[]
         {
-            Events.HurricaneWarning,
             Events.GetToys,
             Events.GetBall,
             Events.GetBicycle
         }));
+        Assert.That(level.RequiresOrderedActions, Is.False);
     }
 
     [Test]
@@ -334,11 +371,19 @@ public sealed class RuleSystemTests
         Assert.That(correct.IsExclusiveWith(distractor), Is.True);
     }
 
-    private static LevelDefinition LoadLevel(int index)
+    private static LevelDefinition LoadLevel(string levelId)
     {
         LevelCatalog catalog = AssetDatabase.LoadAssetAtPath<LevelCatalog>(CatalogPath);
         Assert.That(catalog, Is.Not.Null);
-        Assert.That(catalog.Levels.Count, Is.GreaterThan(index));
-        return catalog.Levels[index];
+        for (int i = 0; i < catalog.Levels.Count; i++)
+        {
+            if (catalog.Levels[i].LevelId == levelId)
+            {
+                return catalog.Levels[i];
+            }
+        }
+
+        Assert.Fail($"Level '{levelId}' was not found in the catalog.");
+        return null;
     }
 }
