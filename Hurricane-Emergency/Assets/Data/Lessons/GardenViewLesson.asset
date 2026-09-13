@@ -17,7 +17,7 @@ MonoBehaviour:
   briefing: The family is outside when the hurricane warning arrives. Choose the safe yard actions before the storm gets close.
   objective: After the warning, take the toys, ball, and bicycle in that order.
   mode: 5
-  thumbnail: {fileID: 21300000, guid: 3445583dbd79a3e4abe7eab39593f7c7, type: 3}
+  thumbnail: {fileID: -3405473756285112296, guid: 3445583dbd79a3e4abe7eab39593f7c7, type: 3}
   requiredItems: 210000002200000023000000
   distractors: 24000000250000003f000000
   openingRuntimeEvents: 0f000000

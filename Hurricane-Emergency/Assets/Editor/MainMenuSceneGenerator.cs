@@ -45,6 +45,7 @@ public static class MainMenuSceneGenerator
         SelectedRuleRowView selectedPrefab = BuildSelectedRulePrefab();
         LessonButtonView lessonPrefab = BuildLessonButtonPrefab();
         BuildGameFlowUiPrefab(optionPrefab, selectedPrefab, lessonPrefab);
+        GameFlowVisualRefresh.Apply();
 
         WireScene(MenuScenePath, true, levelCatalog);
         WireScene(GameplayScenePath, false, levelCatalog);
@@ -145,7 +146,7 @@ public static class MainMenuSceneGenerator
         AddFlexible(spacer, 1f);
 
         LessonButtonView view = root.AddComponent<LessonButtonView>();
-        view.Configure(root.GetComponent<Image>(), null, number, title, description, open);
+        view.Configure(root.GetComponent<Image>(), null, number, title, description, open, scrim.GetComponent<Image>(), contentRect);
         GameObject prefab = PrefabUtility.SaveAsPrefabAsset(root, LessonButtonPrefabPath);
         Object.DestroyImmediate(root);
         return prefab.GetComponent<LessonButtonView>();

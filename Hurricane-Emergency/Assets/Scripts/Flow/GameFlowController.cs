@@ -142,7 +142,7 @@ public sealed class GameFlowController : MonoBehaviour
     private void ShowRuleBuilder()
     {
         state = GameFlowState.RuleBuilder;
-        view.RuleFeedbackText.text = "Build the sequence, then press Check.";
+        view.RuleFeedbackText.text = "Arrange your actions, then select Check plan.";
         view.RuleFeedbackText.color = DeepTeal;
         view.ShowRuleBuilder();
         RefreshRuleLists();

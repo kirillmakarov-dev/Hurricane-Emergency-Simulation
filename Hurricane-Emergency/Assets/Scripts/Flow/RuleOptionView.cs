@@ -25,17 +25,6 @@ public sealed class RuleOptionView : MonoBehaviour
         button.onClick.AddListener(() => onClick());
         GameFlowUITheme.ApplyDynamic(gameObject);
 
-        // Keep the action label readable after the shared button theme runs.
-        label.text = text;
-        label.color = new Color(0.10f, 0.20f, 0.30f, 1f);
-        label.fontStyle = FontStyle.Bold;
-        label.fontSize = 22;
-        label.resizeTextForBestFit = true;
-        label.resizeTextMinSize = 17;
-        label.resizeTextMaxSize = 28;
-        label.alignment = TextAnchor.MiddleCenter;
-        label.horizontalOverflow = HorizontalWrapMode.Wrap;
-        label.verticalOverflow = VerticalWrapMode.Truncate;
     }
 
     public void SetInteractable(bool interactable)

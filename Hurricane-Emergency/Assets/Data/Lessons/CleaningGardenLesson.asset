@@ -18,7 +18,7 @@ MonoBehaviour:
     Choose the actions that reduce outdoor hazards.
   objective: Clear loose yard debris, then gather plywood for protecting the house.
   mode: 2
-  thumbnail: {fileID: 21300000, guid: 60736e71aa8fb6d44b33a1f4f5dfd3e3, type: 3}
+  thumbnail: {fileID: -3405473756285112296, guid: 3445583dbd79a3e4abe7eab39593f7c7, type: 3}
   requiredItems: 3300000034000000
   distractors: 3500000036000000
   openingRuntimeEvents: []
