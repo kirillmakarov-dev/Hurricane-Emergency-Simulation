@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 
 public sealed class RuleSystemTests
@@ -165,6 +166,80 @@ public sealed class RuleSystemTests
     }
 
     [Test]
+    public void CollectSuppliesLessons_AcceptActionsInAnyOrder()
+    {
+        string[] unorderedLessonIds =
+        {
+            "supermarket-lesson",
+            "bedroom-lesson",
+            "kitchen-lesson",
+            "bathroom-lesson",
+            "garden-view-lesson"
+        };
+
+        foreach (string lessonId in unorderedLessonIds)
+        {
+            LevelDefinition level = LoadLevel(lessonId);
+            level.RebuildRuntimeData();
+            Assert.That(level.RequiresOrderedActions, Is.False, lessonId);
+            Assert.That(level.RequiredRuntimeEvents.Count, Is.EqualTo(level.RequiredItems.Count), lessonId);
+        }
+
+        Assert.That(LoadLevel("house-lesson").RequiresOrderedActions, Is.True);
+        Assert.That(LoadLevel("cleaning-garden-lesson").RequiresOrderedActions, Is.True);
+        Assert.That(LoadLevel("go-bag-prototype").RequiresOrderedActions, Is.True);
+        Assert.That(LoadLevel("shelter-lesson").RequiresOrderedActions, Is.True);
+        Assert.That(LoadLevel("after-the-hurricane-lesson").RequiresOrderedActions, Is.True);
+    }
+
+    [Test]
+    public void BathroomLesson_SupportsConfiguredLessonLaunch()
+    {
+        Assert.That(typeof(IConfiguredSequenceMode).IsAssignableFrom(typeof(BathRoomLesson)), Is.True);
+    }
+
+    [Test]
+    public void ChildrenRoomItemMappings_AssignRoomAndHandObjects()
+    {
+        UnityEngine.SceneManagement.Scene previewScene =
+            EditorSceneManager.OpenPreviewScene("Assets/Scenes/SampleScene.unity");
+
+        try
+        {
+            ChildrenRoomMode mode = null;
+            foreach (GameObject root in previewScene.GetRootGameObjects())
+            {
+                mode = root.GetComponentInChildren<ChildrenRoomMode>(true);
+                if (mode != null) break;
+            }
+
+            Assert.That(mode, Is.Not.Null);
+            GameObject boy = new SerializedObject(mode).FindProperty("kelen").objectReferenceValue as GameObject;
+            Assert.That(boy, Is.Not.Null);
+
+            RoomTakesObjects mappings = boy.GetComponent<RoomTakesObjects>();
+            Assert.That(mappings, Is.Not.Null);
+
+            string[] requiredItems = { "Tshirt", "Water", "FlashLight", "Toy" };
+            foreach (string itemName in requiredItems)
+            {
+                ActivateDeactivateObject mapping = mappings.objectsToActivateDeactivate.Find(
+                    entry => entry != null && entry.objectName == itemName);
+
+                Assert.That(mapping, Is.Not.Null, itemName);
+                Assert.That(mapping.objectInHand, Is.Not.Null, itemName + " hand object");
+                Assert.That(mapping.objectInScine, Is.Not.Null, itemName + " room object");
+                Assert.That(mapping.objectInHand.activeSelf, Is.False, itemName + " hand starts hidden");
+                Assert.That(mapping.objectInScine.activeSelf, Is.True, itemName + " room starts visible");
+            }
+        }
+        finally
+        {
+            EditorSceneManager.ClosePreviewScene(previewScene);
+        }
+    }
+
+    [Test]
     public void KitchenLesson_UsesOnlyExistingRuntimeEvents()
     {
         LevelDefinition level = LoadLevel("kitchen-lesson");
@@ -184,7 +259,6 @@ public sealed class RuleSystemTests
         }));
         Assert.That(level.RequiredRuntimeEvents, Is.EqualTo(new[]
         {
-            Events.GobagReminder,
             Events.PackCannedFood,
             Events.PackCrackers,
             Events.PackWater
@@ -213,7 +287,6 @@ public sealed class RuleSystemTests
         }));
         Assert.That(level.RequiredRuntimeEvents, Is.EqualTo(new[]
         {
-            Events.HurricaneWatch,
             Events.PackClothes,
             Events.PackWater,
             Events.PackFlashlight,

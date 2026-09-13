@@ -16,9 +16,11 @@ MonoBehaviour:
   title: Kitchen supplies
   briefing: Kay is checking the kitchen for food and water that can safely travel
     with the family during a hurricane.
-  objective: After the reminder, pack canned food, crackers, and water in that order.
+  objective: After the reminder, pack canned food, crackers, and water. Complete all three actions in any order.
   mode: 9
   thumbnail: {fileID: 21300000, guid: 4048c757b723b1d4da28c3015660a18d, type: 3}
   requiredItems: 060000000700000008000000
   distractors: 090000000a0000000b0000000c000000
   openingRuntimeEvents: 1d000000
+  allowAnyActionOrder: 1
+  excludeOpeningEventsFromProgress: 1

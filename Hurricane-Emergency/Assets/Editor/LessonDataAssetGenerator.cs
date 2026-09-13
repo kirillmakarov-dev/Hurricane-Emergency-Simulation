@@ -99,7 +99,7 @@ public static class LessonDataAssetGenerator
                 "supermarket-lesson",
                 "Supermarket",
                 "The family is buying emergency food before the storm. Choose supplies that can be stored safely if the power goes out.",
-                "Get canned food, crackers, and drinking water in that order.",
+                "Collect canned food, crackers, and drinking water. Complete all three actions in any order.",
                 ModeName.SuperMarket,
                 LoadSprite(SupermarketThumbnailPath),
                 new[]
@@ -115,7 +115,9 @@ public static class LessonDataAssetGenerator
                     LessonRuleItem.SupermarketChicken,
                     LessonRuleItem.SupermarketFish
                 },
-                new[] { Events.GoToSupermarket });
+                new[] { Events.GoToSupermarket },
+                true,
+                true);
             EditorUtility.SetDirty(supermarket);
         }
 
@@ -152,7 +154,7 @@ public static class LessonDataAssetGenerator
                 "kitchen-lesson",
                 "Kitchen supplies",
                 "Kay is checking the kitchen for food and water that can safely travel with the family during a hurricane.",
-                "After the reminder, pack canned food, crackers, and water in that order.",
+                "After the reminder, pack canned food, crackers, and water. Complete all three actions in any order.",
                 ModeName.KitchenLesson,
                 LoadSprite(KitchenThumbnailPath),
                 new[]
@@ -168,7 +170,9 @@ public static class LessonDataAssetGenerator
                     LessonRuleItem.KitchenChicken,
                     LessonRuleItem.KitchenFish
                 },
-                new[] { Events.GobagReminder });
+                new[] { Events.GobagReminder },
+                true,
+                true);
             EditorUtility.SetDirty(kitchen);
         }
 
@@ -179,7 +183,7 @@ public static class LessonDataAssetGenerator
                 "bedroom-lesson",
                 "Prepare the bedroom",
                 "A hurricane watch has been announced. Kelan needs to choose useful bedroom items before the family leaves.",
-                "After the hurricane watch, pack clothes, water, a flashlight, and one toy in that order.",
+                "After the hurricane watch, pack clothes, water, a flashlight, and one toy. Complete all four actions in any order.",
                 ModeName.ChildrenRoom,
                 LoadSprite(BedroomThumbnailPath),
                 new[]
@@ -195,7 +199,9 @@ public static class LessonDataAssetGenerator
                     LessonRuleItem.BedroomLamp,
                     LessonRuleItem.BedroomAquarium
                 },
-                new[] { Events.HurricaneWatch });
+                new[] { Events.HurricaneWatch },
+                true,
+                true);
             EditorUtility.SetDirty(bedroom);
         }
 
@@ -286,7 +292,7 @@ public static class LessonDataAssetGenerator
                 "bathroom-lesson",
                 "Bathroom supplies",
                 "Kelan is preparing the bathroom emergency kit before the family leaves for shelter.",
-                "After the reminder, pack the first aid kit, toothbrush, wipes, and soap in that order.",
+                "After the reminder, pack the first aid kit, toothbrush, wipes, and soap. Complete all four actions in any order.",
                 ModeName.BathRoomLesson,
                 LoadSprite(BathroomThumbnailPath),
                 new[]
@@ -303,7 +309,9 @@ public static class LessonDataAssetGenerator
                     LessonRuleItem.BathroomWashingGel,
                     LessonRuleItem.BathroomCleaningSpray
                 },
-                new[] { Events.GobagReminder });
+                new[] { Events.GobagReminder },
+                true,
+                true);
             EditorUtility.SetDirty(bathroom);
         }
 

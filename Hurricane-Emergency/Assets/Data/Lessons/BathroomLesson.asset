@@ -15,9 +15,11 @@ MonoBehaviour:
   levelId: bathroom-lesson
   title: Bathroom supplies
   briefing: Kelan is preparing the bathroom emergency kit before the family leaves for shelter.
-  objective: After the reminder, pack the first aid kit, toothbrush, wipes, and soap in that order.
+  objective: After the reminder, pack the first aid kit, toothbrush, wipes, and soap. Complete all four actions in any order.
   mode: 10
   thumbnail: {fileID: -9059601078475292556, guid: 1e8f1dc154f9e29419ed547aad2d8a67, type: 3}
   requiredItems: 26000000270000002800000029000000
   distractors: 2a0000002b0000002c0000002d000000
   openingRuntimeEvents: 1d000000
+  allowAnyActionOrder: 1
+  excludeOpeningEventsFromProgress: 1

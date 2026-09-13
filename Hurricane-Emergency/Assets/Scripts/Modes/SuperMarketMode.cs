@@ -19,6 +19,7 @@ public enum AnimationsInSuper
 
 public class SuperMarketMode : MonoBehaviour, IConfiguredSequenceMode
 {
+    [SerializeField] private GameObject supermarketSceneRoot;
     [SerializeField] private GameObject wayToSupermarket; // Reference to the second animation GameObject  
     [SerializeField] private GameObject supermarketMainObject; // Reference to the second animation GameObject
     [SerializeField] private GameObject momAnimator; // Reference to another GameObject
@@ -30,6 +31,7 @@ public class SuperMarketMode : MonoBehaviour, IConfiguredSequenceMode
     public AnimationsInSuper animationToPlay; // Variable to specify which animation to play
 
     private SequentialAnimationQueue<AnimationsInSuper> animationQueue;
+    private Coroutine configuredSequenceCoroutine;
 
     private Dictionary<AnimationsInSuper, Action<Action>> animationMap;
 
@@ -90,17 +92,26 @@ public class SuperMarketMode : MonoBehaviour, IConfiguredSequenceMode
 
     public void PlayConfiguredSequence(IReadOnlyList<string> animationNames, Action onCompleted = null)
     {
-        StartCoroutine(PlayConfiguredSequenceCoroutine(animationNames, onCompleted));
+        if (animationNames == null || animationNames.Count == 0)
+        {
+            Debug.LogWarning("PlayConfiguredSequence requires at least one supermarket action.");
+            return;
+        }
+
+        StopAllCoroutines();
+        animationQueue.Clear();
+        ShowStage(SupermarketStage.CarIntro);
+        configuredSequenceCoroutine = StartCoroutine(PlayConfiguredSequenceCoroutine(animationNames, onCompleted));
     }
 
     private IEnumerator PlayConfiguredSequenceCoroutine(IReadOnlyList<string> animationNames, Action onCompleted)
     {
-        if (!supermarketMainObject.activeSelf)
-        {
-            bool arrivedAtSupermarket = false;
-            WayToSupermarketAnimation(() => arrivedAtSupermarket = true);
-            yield return new WaitUntil(() => arrivedAtSupermarket);
-        }
+        carAnimator.Play("Car scine Animation", 0, 0f);
+        yield return StartCoroutine(WaitForStateToFinish(carAnimator, "Car scine Animation"));
+
+        bool arrivedAtSupermarket = false;
+        WayToSupermarketAnimation(() => arrivedAtSupermarket = true);
+        yield return new WaitUntil(() => arrivedAtSupermarket);
 
         for (int i = 0; i < animationNames.Count; i++)
         {
@@ -124,7 +135,43 @@ public class SuperMarketMode : MonoBehaviour, IConfiguredSequenceMode
             }
         }
 
+        configuredSequenceCoroutine = null;
         onCompleted?.Invoke();
+    }
+
+    private enum SupermarketStage
+    {
+        CarIntro,
+        Road,
+        Store
+    }
+
+    private void ShowStage(SupermarketStage stage)
+    {
+        if (supermarketSceneRoot == null || wayToSupermarket == null ||
+            supermarketMainObject == null || carAnimator == null)
+        {
+            Debug.LogError("Supermarket scene stages are not fully wired in the Inspector.", this);
+            return;
+        }
+
+        supermarketSceneRoot.SetActive(true);
+        carAnimator.gameObject.SetActive(false);
+        wayToSupermarket.SetActive(false);
+        supermarketMainObject.SetActive(false);
+
+        switch (stage)
+        {
+            case SupermarketStage.CarIntro:
+                carAnimator.gameObject.SetActive(true);
+                break;
+            case SupermarketStage.Road:
+                wayToSupermarket.SetActive(true);
+                break;
+            case SupermarketStage.Store:
+                supermarketMainObject.SetActive(true);
+                break;
+        }
     }
 
     private IEnumerator ProcessQueue()
@@ -177,9 +224,7 @@ public class SuperMarketMode : MonoBehaviour, IConfiguredSequenceMode
     public void OnSimulationStart()
     {
         Debug.Log("start SuperMarket mod");
-        carAnimator.gameObject.SetActive(true);
-        // wayToSupermarket.SetActive(true);
-        // Invoke(nameof(ActivateSuperMarketMainObject), 11f); // Call the method after a delay of 15 seconds
+        ShowStage(SupermarketStage.CarIntro);
     }
 
     public void PlayRadioAnnouncement(Action onComplete)
@@ -206,12 +251,11 @@ public class SuperMarketMode : MonoBehaviour, IConfiguredSequenceMode
 
     IEnumerator WayToSupermarket(Action onComplete)
     {
-        wayToSupermarket.SetActive(true);
+        ShowStage(SupermarketStage.Road);
+        carAnimationInSuper.Play("Car Animation", 0, 0f);
         yield return StartCoroutine(WaitForStateToFinish(carAnimationInSuper, "Car Animation"));
-        // yield return new WaitForSeconds(10f);
         WebGLBridge.SendEvent(Events.GoToSupermarket.ToString());
-        wayToSupermarket.SetActive(false);
-        supermarketMainObject.SetActive(true);
+        ShowStage(SupermarketStage.Store);
         onComplete?.Invoke();
     }
 
@@ -224,6 +268,10 @@ public class SuperMarketMode : MonoBehaviour, IConfiguredSequenceMode
     public void Cleanup()
     {
         Debug.Log("Cleanup SuperMarket mod");
+        StopAllCoroutines();
+        animationQueue.Clear();
+        configuredSequenceCoroutine = null;
+        if (supermarketSceneRoot != null) supermarketSceneRoot.SetActive(false);
     }
     public void OnGoToSupermarket(Action onComplete) // This method can be called to trigger the transition to the supermarket mode
     {

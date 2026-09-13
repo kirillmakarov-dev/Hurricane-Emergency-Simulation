@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class BathRoomLesson : MonoBehaviour, ISimulationMode
+public class BathRoomLesson : MonoBehaviour, IConfiguredSequenceMode
 {
     public enum BathRoomAnimations
     {
@@ -71,6 +71,7 @@ public class BathRoomLesson : MonoBehaviour, ISimulationMode
     private Coroutine KeyCoroutine;
 
     private SequentialAnimationQueue<BathRoomAnimations> animationQueue;
+    private Coroutine configuredSequenceCoroutine;
 
     private Dictionary<BathRoomAnimations, Action<Action>> animationMap;
 
@@ -132,6 +133,37 @@ public class BathRoomLesson : MonoBehaviour, ISimulationMode
         yield return animationQueue.Process(
             next => Debug.Log("Animation finished: " + next),
             next => Debug.LogWarning("No function for animation: " + next));
+    }
+
+    public void PlayConfiguredSequence(IReadOnlyList<string> animationNames, Action onCompleted = null)
+    {
+        if (animationNames == null || animationNames.Count == 0)
+        {
+            Debug.LogWarning("PlayConfiguredSequence requires at least one bathroom animation.");
+            return;
+        }
+
+        StopAllCoroutines();
+        animationQueue.Clear();
+        playAnimation = false;
+        simulationStart = false;
+        KeyCoroutine = null;
+        keyAnimator.SetTrigger("Idle");
+        configuredSequenceCoroutine = StartCoroutine(PlayConfiguredSequenceCoroutine(animationNames, onCompleted));
+    }
+
+    private IEnumerator PlayConfiguredSequenceCoroutine(IReadOnlyList<string> animationNames, Action onCompleted)
+    {
+        yield return DadEnterRoomCoroutine();
+
+        for (int i = 0; i < animationNames.Count; i++)
+        {
+            AddGoBagBathroomAnimationFromWeb(animationNames[i]);
+        }
+
+        yield return new WaitUntil(() => animationQueue.Count == 0 && !animationQueue.IsRunning);
+        configuredSequenceCoroutine = null;
+        onCompleted?.Invoke();
     }
     void Start()
     {
@@ -237,12 +269,18 @@ public class BathRoomLesson : MonoBehaviour, ISimulationMode
 
     public void OnSimulationEnd()
     {
-        Debug.Log("end ChildrenRoom mode");
+        Debug.Log("end Bathroom mode");
     }
 
     public void Cleanup()
     {
-        Debug.Log("Cleanup ChildrenRoom mode");
+        Debug.Log("Cleanup Bathroom mode");
+        StopAllCoroutines();
+        animationQueue.Clear();
+        playAnimation = false;
+        simulationStart = false;
+        KeyCoroutine = null;
+        configuredSequenceCoroutine = null;
     }
 
 

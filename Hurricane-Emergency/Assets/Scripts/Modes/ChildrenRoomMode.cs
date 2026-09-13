@@ -387,6 +387,11 @@ public class ChildrenRoomMode : MonoBehaviour, IConfiguredSequenceMode
 
     IEnumerator KelenTakeTshirtCoroutine(GameObject objToMove, Vector3 targetPosition, float speed, Action onComplete)
     {
+        if (kelenRoomObjects == null || !kelenRoomObjects.TryGetHandObject("Tshirt", out _))
+        {
+            yield break;
+        }
+
         // Adjust this value to change the size of the sprite
         Vector3 bagPosition = new Vector3(4f, -2f, 0f); // Position of the bag
         Transform objectTransform = objToMove.transform;
@@ -403,16 +408,18 @@ public class ChildrenRoomMode : MonoBehaviour, IConfiguredSequenceMode
 
         yield return new WaitForSeconds(1f); // Wait for a moment before starting the take animation
 
+        if (!kelenRoomObjects.TrySetObjectActive("Tshirt", true))
+        {
+            yield break;
+        }
+
         FlipKelen(false);
         kelenAnimator.SetTrigger("WalkWith");
 
 
         yield return MoveToTarget(objectTransform, bagPosition, speed);
         kelenAnimator.enabled = false; // Disable the animator to stop any ongoing animations
-        if (kelenRoomObjects != null)
-        {
-            kelenRoomObjects.TrySetObjectActive("TShirt", false);
-        }
+        kelenRoomObjects.TrySetObjectActive("Tshirt", false);
         WebGLBridge.SendEvent(Events.PackClothes.ToString());
         kelenAnimator.enabled = true;
         kelenAnimator.SetTrigger("Idle");
@@ -575,7 +582,7 @@ public class ChildrenRoomMode : MonoBehaviour, IConfiguredSequenceMode
         Vector3 bagPosition = new Vector3(4f, -2f, 0f);
         Transform objectTransform = objToMove.transform;
 
-        if (kelenRoomObjects == null || !kelenRoomObjects.TryGetHandObject(pickupTrigger, out GameObject handObject))
+        if (kelenRoomObjects == null || !kelenRoomObjects.TryGetHandObject(pickupTrigger, out _))
         {
             yield break;
         }
@@ -590,6 +597,11 @@ public class ChildrenRoomMode : MonoBehaviour, IConfiguredSequenceMode
         kelenAnimator.SetTrigger(pickupTrigger);
         yield return new WaitForSeconds(1f);
 
+        if (!kelenRoomObjects.TrySetObjectActive(pickupTrigger, true))
+        {
+            yield break;
+        }
+
         FlipKelen(true);
         kelenAnimator.SetTrigger("WalkWith");
 
@@ -600,7 +612,7 @@ public class ChildrenRoomMode : MonoBehaviour, IConfiguredSequenceMode
         FlipKelen(false);
         kelenAnimator.enabled = false;
         yield return new WaitForSeconds(0.5f);
-        handObject.SetActive(false);
+        kelenRoomObjects.TrySetObjectActive(pickupTrigger, false);
         if (eventname != Events.Empty)
         {
             WebGLBridge.SendEvent(eventname.ToString());
@@ -621,7 +633,7 @@ public class ChildrenRoomMode : MonoBehaviour, IConfiguredSequenceMode
         Vector3 bagPosition = new Vector3(4f, -2f, 0f);
         Transform objectTransform = objToMove.transform;
 
-        if (kelenRoomObjects == null || !kelenRoomObjects.TryGetHandObject(pickupTrigger, out GameObject handObject))
+        if (kelenRoomObjects == null || !kelenRoomObjects.TryGetHandObject(pickupTrigger, out _))
         {
             yield break;
         }
@@ -636,12 +648,17 @@ public class ChildrenRoomMode : MonoBehaviour, IConfiguredSequenceMode
         kelenAnimator.SetTrigger(pickupTrigger);
         yield return new WaitForSeconds(1f);
 
+        if (!kelenRoomObjects.TrySetObjectActive(pickupTrigger, true))
+        {
+            yield break;
+        }
+
         FlipKelen(false);
         kelenAnimator.SetTrigger("WalkWith");
 
         yield return MoveToTarget(objectTransform, bagPosition, speed);
         kelenAnimator.enabled = false;
-        handObject.SetActive(false);
+        kelenRoomObjects.TrySetObjectActive(pickupTrigger, false);
         if (eventname != Events.Empty)
         {
             WebGLBridge.SendEvent(eventname.ToString());

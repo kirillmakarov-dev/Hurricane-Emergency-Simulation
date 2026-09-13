@@ -16,9 +16,11 @@ MonoBehaviour:
   title: Supermarket
   briefing: The family is buying emergency food before the storm. Choose supplies
     that can be stored safely if the power goes out.
-  objective: Get canned food, crackers, and drinking water in that order.
+  objective: Collect canned food, crackers, and drinking water. Complete all three actions in any order.
   mode: 3
   thumbnail: {fileID: 21300000, guid: b85d71fbe3918b747b3c966f0fc92ed2, type: 3}
   requiredItems: 370000003800000039000000
   distractors: 3a0000003b0000003c0000003d000000
   openingRuntimeEvents: 06000000
+  allowAnyActionOrder: 1
+  excludeOpeningEventsFromProgress: 1

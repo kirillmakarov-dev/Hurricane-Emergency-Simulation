@@ -509,7 +509,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 24bfd8bb142a1b346bc4f7adbee1ce0f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RoomTakesObjects
-  objectsToActivateDeactivate: []
+  objectsToActivateDeactivate:
+  - objectName: Tshirt
+    objectInHand: {fileID: 500518706}
+    objectInScine: {fileID: 2081664753}
+  - objectName: Water
+    objectInHand: {fileID: 1672086143}
+    objectInScine: {fileID: 854283664}
+  - objectName: FlashLight
+    objectInHand: {fileID: 444598714}
+    objectInScine: {fileID: 673560911}
+  - objectName: Toy
+    objectInHand: {fileID: 1520886912}
+    objectInScine: {fileID: 767894729}
 --- !u!1 &21114344
 GameObject:
   m_ObjectHideFlags: 0
@@ -14625,6 +14637,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 29fde7db36a67c54a853afa69c9c6ce1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SuperMarketMod
+  supermarketSceneRoot: {fileID: 727674175}
   wayToSupermarket: {fileID: 943820364}
   supermarketMainObject: {fileID: 386866599}
   momAnimator: {fileID: 1720421573}

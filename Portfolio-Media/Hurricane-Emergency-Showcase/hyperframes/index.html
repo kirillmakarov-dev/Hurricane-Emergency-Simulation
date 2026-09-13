@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en" data-resolution="landscape">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, height=1080">
+    <title>Hurricane Emergency Simulation — Portfolio Showcase</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      :root { --navy:#082f3c; --deep:#061d27; --teal:#118b7f; --aqua:#5ed0c4; --yellow:#f2bd45; --coral:#ef6858; }
+      * { box-sizing: border-box; }
+      html, body { width:1920px; height:1080px; margin:0; overflow:hidden; background:var(--deep); font-family:Inter,"Segoe UI",Arial,sans-serif; color:white; }
+      #root { position:relative; width:1920px; height:1080px; overflow:hidden; isolation:isolate; background:radial-gradient(circle at 20% 15%,rgba(94,208,196,.22),transparent 34%),linear-gradient(135deg,var(--deep),var(--navy)); }
+      .clip { position:absolute; inset:0; overflow:hidden; }
+      video { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; background:#071a22; }
+      .footage::after { content:""; position:absolute; inset:0; pointer-events:none; background:linear-gradient(90deg,rgba(6,29,39,.56) 0%,transparent 31%,transparent 78%,rgba(6,29,39,.12) 100%); }
+      .brand-rail { position:absolute; top:58px; left:68px; z-index:5; display:flex; align-items:center; gap:14px; padding:13px 20px; border:1px solid rgba(255,255,255,.26); border-radius:999px; background:rgba(6,29,39,.82); box-shadow:0 12px 34px rgba(6,29,39,.22); backdrop-filter:blur(14px); font-size:20px; font-weight:760; letter-spacing:.08em; text-transform:uppercase; }
+      .brand-dot { width:15px; height:15px; border-radius:50%; background:var(--aqua); box-shadow:0 0 0 6px rgba(94,208,196,.16); }
+      .callout { position:absolute; z-index:6; left:68px; bottom:70px; width:650px; padding:30px 34px 31px; border-radius:24px; background:rgba(6,29,39,.91); border:1px solid rgba(255,255,255,.18); box-shadow:0 22px 54px rgba(2,18,25,.32); backdrop-filter:blur(16px); }
+      .eyebrow { margin-bottom:12px; color:var(--aqua); font-size:18px; font-weight:800; letter-spacing:.16em; text-transform:uppercase; }
+      .callout h2 { margin:0; max-width:590px; font-size:49px; line-height:1.05; letter-spacing:-.035em; }
+      .callout p { margin:15px 0 0; color:rgba(255,255,255,.76); font-size:23px; line-height:1.35; }
+      .title-card { display:grid; place-items:center; background:radial-gradient(circle at 76% 24%,rgba(242,189,69,.2),transparent 29%),radial-gradient(circle at 22% 80%,rgba(17,139,127,.35),transparent 34%),linear-gradient(135deg,#061d27 0%,#0a3947 100%); }
+      .title-grid { position:absolute; inset:0; opacity:.15; background-image:linear-gradient(rgba(255,255,255,.09) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.09) 1px,transparent 1px); background-size:72px 72px; mask-image:linear-gradient(to bottom,black,transparent 82%); }
+      .storm-mark { position:absolute; width:640px; height:640px; right:-80px; top:-55px; border:78px solid rgba(94,208,196,.09); border-radius:50%; }
+      .storm-mark::before,.storm-mark::after { content:""; position:absolute; border-radius:50%; border:5px solid rgba(242,189,69,.32); }
+      .storm-mark::before { inset:112px; } .storm-mark::after { inset:205px; }
+      .title-lockup { position:relative; z-index:2; width:1550px; }
+      .title-kicker { display:flex; align-items:center; gap:18px; margin-bottom:28px; color:var(--aqua); font-size:24px; font-weight:800; letter-spacing:.19em; text-transform:uppercase; }
+      .title-kicker::before { content:""; width:82px; height:5px; border-radius:9px; background:var(--yellow); }
+      .title-lockup h1 { margin:0; max-width:1280px; font-size:116px; line-height:.93; letter-spacing:-.06em; }
+      .title-lockup h1 span { color:var(--aqua); }
+      .title-lockup p { margin:32px 0 0; color:rgba(255,255,255,.72); font-size:31px; font-weight:520; }
+      .feature-row { display:flex; gap:13px; margin-top:40px; }
+      .pill { padding:12px 18px; border-radius:999px; color:#e9fffb; background:rgba(17,139,127,.28); border:1px solid rgba(94,208,196,.38); font-size:18px; font-weight:700; letter-spacing:.02em; }
+      .outro-shade { position:absolute; inset:0; z-index:4; background:linear-gradient(90deg,rgba(6,29,39,.95) 0%,rgba(6,29,39,.74) 43%,rgba(6,29,39,.12) 78%); }
+      .outro-copy { position:absolute; z-index:7; left:92px; top:50%; width:860px; transform:translateY(-50%); }
+      .outro-copy h2 { margin:0; font-size:76px; line-height:.98; letter-spacing:-.05em; }
+      .outro-copy p { margin:23px 0 0; max-width:720px; color:rgba(255,255,255,.78); font-size:27px; line-height:1.35; }
+      .tech-line { margin-top:34px; color:var(--aqua); font-size:19px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
+      .hf-soft-blur-in { opacity:0; filter:blur(18px); will-change:transform,opacity,filter; }
+    </style>
+  </head>
+  <body>
+    <main data-hf-id="hf-ginq" id="root" data-composition-id="main" data-start="0" data-duration="58.5" data-width="1920" data-height="1080" data-fps="30">
+      <section data-hf-id="hf-304v" id="intro" class="clip title-card" data-start="0" data-duration="4" data-track-index="2">
+        <div data-hf-id="hf-9f5j" class="title-grid"></div><div data-hf-id="hf-0g52" class="storm-mark" data-layout-allow-overflow=""></div>
+        <div data-hf-id="hf-evmh" class="title-lockup">
+          <div data-hf-id="hf-78cr" class="title-kicker hf-soft-blur-in">Interactive learning game</div>
+          <h1 data-hf-id="hf-5sdz" class="hf-soft-blur-in">Hurricane Emergency <span data-hf-id="hf-dheq">Simulation</span></h1>
+          <p data-hf-id="hf-3uhx" class="hf-soft-blur-in">Plan safely. Watch the outcome. Learn by doing.</p>
+          <div data-hf-id="hf-qxpk" class="feature-row hf-soft-blur-in"><span data-hf-id="hf-tbwp" class="pill">Unity</span><span data-hf-id="hf-tx9c" class="pill">10 lessons</span><span data-hf-id="hf-fu2m" class="pill">Rule-based learning</span></div>
+        </div>
+      </section>
+
+      <video data-hf-id="hf-5z3n" id="menu-video" src="assets/source/garden-view.mp4" data-start="4" data-duration="5.5" data-media-start="0" data-volume="0.16" data-has-audio="true" data-track-index="1"></video>
+      <section data-hf-id="hf-jiqm" id="menu-scene" class="clip footage" data-start="4" data-duration="5.5" data-track-index="3">
+        <div data-hf-id="hf-oouc" class="brand-rail"><span data-hf-id="hf-i9p2" class="brand-dot"></span>Hurricane Ready</div>
+        <div data-hf-id="hf-nok5" class="callout hf-soft-blur-in"><div data-hf-id="hf-zoy0" class="eyebrow">Explore</div><h2 data-hf-id="hf-gnqe">Ten focused safety lessons</h2><p data-hf-id="hf-ave9">Home, supplies, shelter, outdoor preparation, and recovery.</p></div>
+      </section>
+
+      <video data-hf-id="hf-ozi4" id="rules-video" src="assets/source/garden-view.mp4" data-start="9.5" data-duration="6.5" data-media-start="4.2" data-volume="0.14" data-has-audio="true" data-track-index="1"></video>
+      <section data-hf-id="hf-cvuk" id="rules-scene" class="clip footage" data-start="9.5" data-duration="6.5" data-track-index="4">
+        <div data-hf-id="hf-nfli" class="brand-rail"><span data-hf-id="hf-k48q" class="brand-dot"></span>Build your plan</div>
+        <div data-hf-id="hf-grbd" class="callout hf-soft-blur-in"><div data-hf-id="hf-vf6t" class="eyebrow">Decide</div><h2 data-hf-id="hf-hznp">Choose the safe actions</h2><p data-hf-id="hf-5wyz">Clear either/or choices turn preparation into an understandable plan.</p></div>
+      </section>
+
+      <video data-hf-id="hf-rvxd" id="house-warning-video" src="assets/source/house.mp4" data-start="16" data-duration="9" data-media-start="18.5" data-volume="0.22" data-has-audio="true" data-track-index="1"></video>
+      <section data-hf-id="hf-c25w" id="house-sim" class="clip footage" data-start="16" data-duration="9" data-track-index="5">
+        <div data-hf-id="hf-mrnl" class="brand-rail"><span data-hf-id="hf-kijr" class="brand-dot"></span>Live simulation</div>
+        <div data-hf-id="hf-hy8g" class="callout hf-soft-blur-in"><div data-hf-id="hf-1zxx" class="eyebrow">Experience</div><h2 data-hf-id="hf-2zch">Your plan becomes action</h2><p data-hf-id="hf-ysz0">Characters perform the selected steps while the lesson tracks progress.</p></div>
+      </section>
+
+      <video data-hf-id="hf-c7f6" id="house-feedback-video" src="assets/source/house.mp4" data-start="25" data-duration="6" data-media-start="29.2" data-volume="0.2" data-has-audio="true" data-track-index="1"></video>
+      <section data-hf-id="hf-n1ky" id="house-feedback" class="clip footage" data-start="25" data-duration="6" data-track-index="6">
+        <div data-hf-id="hf-cgik" class="brand-rail"><span data-hf-id="hf-kwus" class="brand-dot"></span>Immediate feedback</div>
+        <div data-hf-id="hf-hjxf" class="callout hf-soft-blur-in"><div data-hf-id="hf-85x3" class="eyebrow">Understand</div><h2 data-hf-id="hf-rere">See every completed step</h2><p data-hf-id="hf-2qh2">Visual feedback connects each decision to a clear result.</p></div>
+      </section>
+
+      <video data-hf-id="hf-j0dy" id="garden-toys-video" src="assets/source/garden-view.mp4" data-start="31" data-duration="8" data-media-start="16.5" data-volume="0.2" data-has-audio="true" data-track-index="1"></video>
+      <section data-hf-id="hf-nl2r" id="garden-toys" class="clip footage" data-start="31" data-duration="8" data-track-index="7">
+        <div data-hf-id="hf-yzyu" class="brand-rail"><span data-hf-id="hf-lb5t" class="brand-dot"></span>Garden View</div>
+        <div data-hf-id="hf-fkea" class="callout hf-soft-blur-in"><div data-hf-id="hf-ihkk" class="eyebrow">Practice</div><h2 data-hf-id="hf-cw3h">Learn across varied environments</h2><p data-hf-id="hf-mti7">Each lesson combines its own objective, animation, and safety decisions.</p></div>
+      </section>
+
+      <video data-hf-id="hf-66or" id="garden-bike-video" src="assets/source/garden-view.mp4" data-start="39" data-duration="8" data-media-start="44.5" data-volume="0.2" data-has-audio="true" data-track-index="1"></video>
+      <section data-hf-id="hf-z3jq" id="garden-bike" class="clip footage" data-start="39" data-duration="8" data-track-index="8">
+        <div data-hf-id="hf-83ab" class="brand-rail"><span data-hf-id="hf-lpgu" class="brand-dot"></span>Three actions • any order</div>
+        <div data-hf-id="hf-f639" class="callout hf-soft-blur-in"><div data-hf-id="hf-dc6u" class="eyebrow">Complete</div><h2 data-hf-id="hf-99sx">Finish every required task</h2><p data-hf-id="hf-s1i3">Lesson-specific rules support both ordered plans and completion-based goals.</p></div>
+      </section>
+
+      <video data-hf-id="hf-r5iz" id="mistake-video" src="assets/source/kitchen.mp4" data-start="47" data-duration="5.5" data-media-start="23.5" data-volume="0.22" data-has-audio="true" data-track-index="1"></video>
+      <section data-hf-id="hf-o5oc" id="mistake-scene" class="clip footage" data-start="47" data-duration="5.5" data-track-index="9">
+        <div data-hf-id="hf-lqmb" class="brand-rail"><span data-hf-id="hf-cei7" class="brand-dot" style="background:var(--coral)"></span>Kitchen supplies</div>
+        <div data-hf-id="hf-gd0c" class="callout hf-soft-blur-in"><div data-hf-id="hf-li39" class="eyebrow" style="color:#ffb5aa">Reflect</div><h2 data-hf-id="hf-aexd">Learn from unsafe choices</h2><p data-hf-id="hf-1eze">Clear, immediate feedback explains when an action does not belong.</p></div>
+      </section>
+
+      <video data-hf-id="hf-kng4" id="outro-video" src="assets/source/garden-view.mp4" data-start="52.5" data-duration="6" data-media-start="53.7" data-volume="0.12" data-has-audio="true" data-track-index="1"></video>
+      <section data-hf-id="hf-g91v" id="outro" class="clip footage" data-start="52.5" data-duration="6" data-track-index="10">
+        <div data-hf-id="hf-g6ol" class="outro-shade"></div>
+        <div data-hf-id="hf-0gt5" class="outro-copy">
+          <div data-hf-id="hf-k4r5" class="eyebrow hf-soft-blur-in">Portfolio project</div>
+          <h2 data-hf-id="hf-1dsh" class="hf-soft-blur-in">Hurricane Emergency Simulation</h2>
+          <p data-hf-id="hf-4rpx" class="hf-soft-blur-in">An interactive educational experience that turns emergency preparation into active learning.</p>
+          <div data-hf-id="hf-hqtp" class="tech-line hf-soft-blur-in">Unity • C# • ScriptableObjects • WebGL</div>
+        </div>
+      </section>
+
+      <audio data-hf-id="hf-zbqi" id="music-bed" src=".media/audio/bgm/bgm_001.wav" data-start="0" data-duration="58.5" data-volume="0.34" data-track-index="0"></audio>
+    </main>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused:true });
+      function reveal(selector,start,hold) {
+        const items=gsap.utils.toArray(selector);
+        tl.fromTo(items,{opacity:0,y:28,filter:"blur(18px)"},{opacity:1,y:0,filter:"blur(0px)",duration:.72,ease:"power3.out",stagger:.08},start);
+        tl.to(items,{opacity:0,y:-16,filter:"blur(8px)",duration:.38,ease:"power2.in",stagger:.025},start+hold);
+      }
+      reveal("#intro .hf-soft-blur-in",.35,3.05);
+      reveal("#menu-scene .hf-soft-blur-in",4.45,4.35);
+      reveal("#rules-scene .hf-soft-blur-in",9.95,5.25);
+      reveal("#house-sim .hf-soft-blur-in",16.45,7.75);
+      reveal("#house-feedback .hf-soft-blur-in",25.45,4.75);
+      reveal("#garden-toys .hf-soft-blur-in",31.45,6.75);
+      reveal("#garden-bike .hf-soft-blur-in",39.45,6.75);
+      reveal("#mistake-scene .hf-soft-blur-in",47.4,4.25);
+      reveal("#outro .hf-soft-blur-in",52.95,4.85);
+      window.__timelines.main=tl;
+    </script>
+  </body>
+</html>
